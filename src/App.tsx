@@ -1,8 +1,14 @@
 import { Navigation } from "@/components/navigation";
+import InitPage from "@/pages/Init";
 import { routes } from "@/routes";
+import { useProjectStore } from "@/store/project";
 import { HashRouter, Route, Routes } from "react-router-dom";
 
 const App = () => {
+  const {currentProject} = useProjectStore();
+
+  if (!currentProject) return <InitPage />
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <HashRouter>
