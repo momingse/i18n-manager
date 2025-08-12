@@ -23,7 +23,7 @@ interface ProjectStore {
   ) => void;
   switchProject: (projectId: string) => void;
   updateProject: (project: Project) => void;
-  setLanguages: (updater: SetStateAction<string[]>) => void;
+  setLanguages: (updater: SetStateAction<LanguageCode[]>) => void;
 }
 
 export const useProjectStore = create<ProjectStore>((set) => ({
@@ -31,7 +31,7 @@ export const useProjectStore = create<ProjectStore>((set) => ({
   projects: [],
   createProject: (projectName, description, languages) => {
     const newProject = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       name: projectName,
       description,
       languages,

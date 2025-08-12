@@ -54,7 +54,7 @@ export default function InitPage() {
     );
   };
 
-  const nextStep = () => setStep(Math.min(step + 1, 3));
+  const nextStep = () => setStep(Math.min(step + 1, 2));
   const prevStep = () => setStep(Math.max(step - 1, 1));
 
   return (
@@ -225,14 +225,7 @@ export default function InitPage() {
                           <span className="text-xs text-muted-foreground">
                             ({lang.code})
                           </span>
-                          {/* {lang.popular && ( */}
-                          {/*   <Badge */}
-                          {/*     variant="secondary" */}
-                          {/*     className="text-xs bg-primary/10 text-primary" */}
-                          {/*   > */}
-                          {/*     Popular */}
-                          {/*   </Badge> */}
-                          {/* )} */}
+
                           {isRequired && (
                             <Badge
                               variant="secondary"
@@ -267,118 +260,6 @@ export default function InitPage() {
               </CardContent>
             </>
           )}
-
-          {/* {step === 3 && ( */}
-          {/*   <> */}
-          {/*     <CardHeader className="text-center pb-6"> */}
-          {/*       <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-500/10 flex items-center justify-center"> */}
-          {/*         <Settings className="w-6 h-6 text-purple-600" /> */}
-          {/*       </div> */}
-          {/*       <CardTitle className="text-2xl">Translation Service</CardTitle> */}
-          {/*       <CardDescription className="text-base"> */}
-          {/*         Choose your preferred AI translation service */}
-          {/*       </CardDescription> */}
-          {/*     </CardHeader> */}
-          {/*     <CardContent className="space-y-6"> */}
-          {/*       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4"> */}
-          {/*         {TRANSLATION_SERVICES.map((service) => ( */}
-          {/*           <div */}
-          {/*             key={service.id} */}
-          {/*             className={cn( */}
-          {/*               "p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer hover:shadow-md", */}
-          {/*               projectData.translationService === service.id */}
-          {/*                 ? "border-primary/50 bg-primary/5 shadow-sm" */}
-          {/*                 : "border-muted hover:border-primary/30 hover:bg-muted/50", */}
-          {/*             )} */}
-          {/*             onClick={() => */}
-          {/*               setProjectData({ */}
-          {/*                 ...projectData, */}
-          {/*                 translationService: service.id, */}
-          {/*               }) */}
-          {/*             } */}
-          {/*           > */}
-          {/*             <div className="flex items-start gap-3"> */}
-          {/*               <div className="mt-1">{service.icon}</div> */}
-          {/*               <div className="flex-1 min-w-0"> */}
-          {/*                 <div className="flex items-center gap-2 mb-1"> */}
-          {/*                   <h3 className="font-semibold">{service.name}</h3> */}
-          {/*                   {service.popular && ( */}
-          {/*                     <Badge */}
-          {/*                       variant="secondary" */}
-          {/*                       className="text-xs bg-primary/10 text-primary" */}
-          {/*                     > */}
-          {/*                       Popular */}
-          {/*                     </Badge> */}
-          {/*                   )} */}
-          {/*                 </div> */}
-          {/*                 <p className="text-sm text-muted-foreground"> */}
-          {/*                   {service.description} */}
-          {/*                 </p> */}
-          {/*               </div> */}
-          {/*             </div> */}
-          {/*           </div> */}
-          {/*         ))} */}
-          {/*       </div> */}
-
-          {/*       {selectedService?.requiresKey && ( */}
-          {/*         <div className="animate-in fade-in slide-in-from-bottom duration-300"> */}
-          {/*           <Label htmlFor="api-key" className="text-base font-medium"> */}
-          {/*             API Key {selectedService.id !== "ollama" && "*"} */}
-          {/*           </Label> */}
-          {/*           <Input */}
-          {/*             id="api-key" */}
-          {/*             type="password" */}
-          {/*             placeholder={`Enter your ${selectedService.name} API key...`} */}
-          {/*             value={projectData.apiKey} */}
-          {/*             onChange={(e) => */}
-          {/*               setProjectData({ */}
-          {/*                 ...projectData, */}
-          {/*                 apiKey: e.target.value, */}
-          {/*               }) */}
-          {/*             } */}
-          {/*             className="mt-2 h-12 text-base bg-muted/50 border-0 focus:bg-muted/70 transition-colors duration-200" */}
-          {/*           /> */}
-          {/*           <p className="text-sm text-muted-foreground mt-2"> */}
-          {/*             This will be stored securely and used only for translation */}
-          {/*             requests */}
-          {/*           </p> */}
-          {/*         </div> */}
-          {/*       )} */}
-
-          {/*       <div className="flex justify-between pt-4"> */}
-          {/*         <Button */}
-          {/*           variant="outline" */}
-          {/*           onClick={prevStep} */}
-          {/*           className="px-6 h-12 bg-transparent" */}
-          {/*         > */}
-          {/*           Back */}
-          {/*         </Button> */}
-          {/*         <Button */}
-          {/*           onClick={handleCreateProject} */}
-          {/*           disabled={ */}
-          {/*             isCreating || */}
-          {/*             (selectedService?.requiresKey && */}
-          {/*               selectedService.id !== "ollama" && */}
-          {/*               !projectData.apiKey.trim()) */}
-          {/*           } */}
-          {/*           className="px-8 h-12 text-base bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600" */}
-          {/*         > */}
-          {/*           {isCreating ? ( */}
-          {/*             <div className="flex items-center gap-2"> */}
-          {/*               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> */}
-          {/*               Creating Project... */}
-          {/*             </div> */}
-          {/*           ) : ( */}
-          {/*             <div className="flex items-center gap-2"> */}
-          {/*               <Rocket className="w-4 h-4" /> */}
-          {/*               Create Project */}
-          {/*             </div> */}
-          {/*           )} */}
-          {/*         </Button> */}
-          {/*       </div> */}
-          {/*     </CardContent> */}
-          {/*   </> */}
-          {/* )} */}
         </Card>
 
         {/* Footer */}
