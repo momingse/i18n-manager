@@ -44,7 +44,7 @@ jobs:
       - name: Install better-npm-audit
         run: pnpm add -g better-npm-audit
 
-      - name: Install eslint
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Run ESLint
@@ -53,4 +53,4 @@ jobs:
         run: pnpm lint
 
       - name: Run NPM audit
-        run: better-npm-audit --severity high
+        run: better-npm-audit --level high
