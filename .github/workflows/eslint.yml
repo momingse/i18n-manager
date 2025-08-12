@@ -44,6 +44,9 @@ jobs:
       - name: Install better-npm-audit
         run: pnpm add -g better-npm-audit
 
+      - name: Install eslint
+        run: pnpm install --frozen-lockfile
+
       - name: Run ESLint
         env:
           SARIF_ESLINT_IGNORE_SUPPRESSED: "true"
