@@ -19,7 +19,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useProjectStore } from "@/store/project";
-import { useSidebarStore } from "@/store/sidebar";
 import { ChevronDown, FileText, FolderOpen, Globe, Plus } from "lucide-react";
 import { useState } from "react";
 
@@ -35,7 +34,7 @@ export function ProjectSelector({ isOpen }: ProjectSelectorProps) {
     languages: ["en"],
   });
 
-  const { currentProject, projects, switchProject, createProject } =
+  const { currentProjectId, projects, switchProject, createProject } =
     useProjectStore();
 
   const handleCreateProject = () => {
@@ -50,7 +49,9 @@ export function ProjectSelector({ isOpen }: ProjectSelectorProps) {
     setIsCreateDialogOpen(false);
   };
 
-  if (!currentProject) return null;
+  if (!currentProjectId) return null;
+
+  const currentProject = projects[currentProjectId];
 
   return (
     <div className="w-full">
@@ -120,7 +121,7 @@ export function ProjectSelector({ isOpen }: ProjectSelectorProps) {
               ALL PROJECTS
             </div>
             <div className="max-h-48 overflow-y-auto space-y-1">
-              {projects.map((project) => (
+              {Object.values(projects)?.map((project) => (
                 <DropdownMenuItem
                   key={project.id}
                   onClick={() => switchProject(project.id)}

@@ -14,8 +14,8 @@ export type Project = {
 };
 
 interface ProjectStore {
-  currentProject: Project | null;
-  projects: Project[];
+  currentProjectId: string | null;
+  projects: Record<string, Project>;
   createProject: (
     projectName: string,
     description: string,
@@ -27,8 +27,8 @@ interface ProjectStore {
 }
 
 export const useProjectStore = create<ProjectStore>((set) => ({
-  currentProject: null,
-  projects: [],
+  currentProjectId: null,
+  projects: {},
   createProject: (projectName, description, languages) => {
     const newProject = {
       id: crypto.randomUUID(),
@@ -41,30 +41,49 @@ export const useProjectStore = create<ProjectStore>((set) => ({
       data: {},
     };
     set((state) => ({
-      projects: [...state.projects, newProject],
-      currentProject: newProject,
+      projects: {
+        ...state.projects,
+        [newProject.id]: newProject,
+      },
+      currentProjectId: newProject.id,
     }));
   },
   switchProject: (projectId) => {
     set((state) => ({
-      currentProject: state.projects.find(
-        (project) => project.id === projectId,
-      ),
+      currentProjectId: state.projects[projectId] ? projectId : null,
     }));
   },
-  updateProject: (project) => set({ currentProject: project }),
+  updateProject: (project) => {
+    set((state) => ({
+      projects: {
+        ...state.projects,
+        [project.id]: project,
+      },
+      currentProjectId:
+        state.currentProjectId === project.id
+          ? project.id
+          : state.currentProjectId,
+    }));
+  },
   setLanguages: (updater) => {
     set((state) => {
-      if (!state.currentProject) return state;
+      if (!state.currentProjectId || !state.projects[state.currentProjectId]) {
+        return state;
+      }
+
+      const currentProject = state.projects[state.currentProjectId];
       const nextLanguages =
         typeof updater === "function"
-          ? updater(state.currentProject.languages)
+          ? updater(currentProject.languages)
           : updater;
 
       return {
-        currentProject: {
-          ...state.currentProject,
-          languages: nextLanguages,
+        projects: {
+          ...state.projects,
+          [state.currentProjectId]: {
+            ...currentProject,
+            languages: nextLanguages,
+          },
         },
       };
     });
