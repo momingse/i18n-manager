@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -17,67 +16,52 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Settings, Globe, Zap, Menu } from "lucide-react";
-import { toast } from "sonner";
+import { COMMON_LANGUAGES } from "@/constants/constants";
+import { useProjectStore } from "@/store/project";
 import { useSidebarStore } from "@/store/sidebar";
-
-const COMMON_LANGUAGES = [
-  { code: "en", name: "English", flag: "🇺🇸" },
-  { code: "es", name: "Spanish", flag: "🇪🇸" },
-  { code: "fr", name: "French", flag: "🇫🇷" },
-  { code: "de", name: "German", flag: "🇩🇪" },
-  { code: "it", name: "Italian", flag: "🇮🇹" },
-  { code: "pt", name: "Portuguese", flag: "🇵🇹" },
-  { code: "ru", name: "Russian", flag: "🇷🇺" },
-  { code: "ja", name: "Japanese", flag: "🇯🇵" },
-  { code: "ko", name: "Korean", flag: "🇰🇷" },
-  { code: "zh", name: "Chinese", flag: "🇨🇳" },
-  { code: "ar", name: "Arabic", flag: "🇸🇦" },
-  { code: "hi", name: "Hindi", flag: "🇮🇳" },
-  { code: "nl", name: "Dutch", flag: "🇳🇱" },
-  { code: "sv", name: "Swedish", flag: "🇸🇪" },
-  { code: "no", name: "Norwegian", flag: "🇳🇴" },
-];
+import { Globe, Menu, Plus, Settings, X, Zap } from "lucide-react";
+import { useState } from "react";
 
 export default function SettingsPage() {
-  const [languages, setLanguages] = useState<string[]>(["en"]);
   const [selectedLanguage, setSelectedLanguage] = useState("");
   const [translationService, setTranslationService] = useState("gemini");
   const [apiKey, setApiKey] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
+
+  const { currentProject, setLanguages } = useProjectStore();
+  const languages = currentProject?.languages ?? [];
 
   const { toggle } = useSidebarStore();
 
-  useEffect(() => {
-    const saved = localStorage.getItem("languages");
-    if (saved) {
-      setLanguages(JSON.parse(saved));
-    }
+  // useEffect(() => {
+  //   const saved = localStorage.getItem("languages");
+  //   if (saved) {
+  //     setLanguages(JSON.parse(saved));
+  //   }
 
-    const savedService = localStorage.getItem("translationService");
-    if (savedService) {
-      setTranslationService(savedService);
-    }
+  //   const savedService = localStorage.getItem("translationService");
+  //   if (savedService) {
+  //     setTranslationService(savedService);
+  //   }
 
-    const savedApiKey = localStorage.getItem("apiKey");
-    if (savedApiKey) {
-      setApiKey(savedApiKey);
-    }
-  }, []);
+  //   const savedApiKey = localStorage.getItem("apiKey");
+  //   if (savedApiKey) {
+  //     setApiKey(savedApiKey);
+  //   }
+  // }, []);
 
-  const saveSettings = async () => {
-    setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
+  // const saveSettings = async () => {
+  //   setIsSaving(true);
+  //   await new Promise((resolve) => setTimeout(resolve, 800));
 
-    localStorage.setItem("languages", JSON.stringify(languages));
-    localStorage.setItem("translationService", translationService);
-    localStorage.setItem("apiKey", apiKey);
+  //   localStorage.setItem("languages", JSON.stringify(languages));
+  //   localStorage.setItem("translationService", translationService);
+  //   localStorage.setItem("apiKey", apiKey);
 
-    setIsSaving(false);
-    toast("Setting saved", {
-      description: "Language and service settings have been updated",
-    });
-  };
+  //   setIsSaving(false);
+  //   toast("Setting saved", {
+  //     description: "Language and service settings have been updated",
+  //   });
+  // };
 
   const addLanguage = (code: string) => {
     if (!languages.includes(code)) {
@@ -282,24 +266,24 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end animate-in fade-in slide-in-from-bottom duration-700 delay-600">
-            <Button
-              onClick={saveSettings}
-              size="md"
-              sm:size="lg"
-              className="px-6 sm:px-8 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-200"
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Saving Configuration...
-                </div>
-              ) : (
-                "Save Configuration"
-              )}
-            </Button>
-          </div>
+          {/* <div className="flex justify-end animate-in fade-in slide-in-from-bottom duration-700 delay-600"> */}
+          {/*   <Button */}
+          {/*     onClick={saveSettings} */}
+          {/*     size="md" */}
+          {/*     sm:size="lg" */}
+          {/*     className="px-6 sm:px-8 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-200" */}
+          {/*     disabled={isSaving} */}
+          {/*   > */}
+          {/*     {isSaving ? ( */}
+          {/*       <div className="flex items-center gap-2"> */}
+          {/*         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> */}
+          {/*         Saving Configuration... */}
+          {/*       </div> */}
+          {/*     ) : ( */}
+          {/*       "Save Configuration" */}
+          {/*     )} */}
+          {/*   </Button> */}
+          {/* </div> */}
         </div>
       </div>
     </div>

@@ -122,6 +122,35 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--muted-foreground) var(--background);
+  }
+
+  *::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: var(--background);
+    border-radius: calc(var(--radius) - 2px);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--muted-foreground);
+    border-radius: calc(var(--radius) - 2px);
+    border: 2px solid var(--background);
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--ring);
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: var(--background);
+  }
 }
 
 @layer utilities {
