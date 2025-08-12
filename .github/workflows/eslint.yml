@@ -42,17 +42,14 @@ jobs:
           node-version: 22
           cache: "pnpm"
 
-      - name: Install better-npm-audit
-        run: pnpm add -g better-npm-audit
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Run NPM audit
-        run: better-npm-audit audit --level high
 
       - name: Run ESLint
         env:
           SARIF_ESLINT_IGNORE_SUPPRESSED: "true"
         run: pnpm lint
+
+      - name: Run audit
+        run: pnpm audit --audit-level=high
 
