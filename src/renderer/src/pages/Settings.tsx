@@ -27,7 +27,8 @@ export default function SettingsPage() {
   const [translationService, setTranslationService] = useState("gemini");
   const [apiKey, setApiKey] = useState("");
 
-  const { currentProject, setLanguages } = useProjectStore();
+  const { currentProjectId, projects, setLanguages } = useProjectStore();
+  const currentProject = projects[currentProjectId ?? ""];
   const languages = currentProject?.languages ?? [];
 
   const { toggle } = useSidebarStore();
