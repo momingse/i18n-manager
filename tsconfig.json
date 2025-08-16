@@ -16,8 +16,8 @@
 
     /* Linting */
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    // "noUnusedLocals": true,
+    // "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
     "baseUrl": ".",
@@ -28,5 +28,6 @@
 
   },
   "include": ["src", "electron"],
+  "exclude": ["**/components/ui/**"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -322,7 +322,7 @@ export default function UploadPage() {
                       value={textContent}
                       onChange={(e) => setTextContent(e.target.value)}
                       rows={8}
-                      sm:rows={12}
+                      // sm:rows={12}
                       className="mt-3 resize-none border-0 bg-muted/50 focus:bg-muted/70 transition-colors duration-200 text-base"
                     />
                   </div>
@@ -378,7 +378,7 @@ export default function UploadPage() {
                       value={codeContent}
                       onChange={(e) => setCodeContent(e.target.value)}
                       rows={10}
-                      sm:rows={15}
+                      // sm:rows={15}
                       className="mt-3 font-mono text-sm resize-none border-0 bg-muted/50 focus:bg-muted/70 transition-colors duration-200"
                     />
                   </div>
