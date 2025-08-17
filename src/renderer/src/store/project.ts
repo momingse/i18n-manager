@@ -18,9 +18,12 @@ export type Project = {
   data: Record<string, Record<string, string>>;
 };
 
-interface ProjectStore {
+type ProjectStoreState = {
   currentProjectId: string | null;
   projects: Record<string, Project>;
+};
+
+type ProjectStoreActions = {
   createProject: (
     projectName: string,
     path: string,
@@ -32,7 +35,9 @@ interface ProjectStore {
   updateProject: (project: Project) => void;
   addLanguage: (language: i18nLanguage) => void;
   removeLanguage: (languageId: string) => void;
-}
+};
+
+type ProjectStore = ProjectStoreState & ProjectStoreActions;
 
 export const useProjectStore = create<ProjectStore>((set) => ({
   currentProjectId: null,
