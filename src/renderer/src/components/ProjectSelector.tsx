@@ -38,20 +38,13 @@ export function ProjectSelector({ isOpen }: ProjectSelectorProps) {
     useProjectStore();
 
   const handleCreateProject = () => {
-    if (!newProject.name.trim()) return;
-
-    createProject(
-      newProject.name,
-      newProject.description,
-      newProject.languages,
-    );
-
-    setIsCreateDialogOpen(false);
+    // TODO: create project
   };
 
   if (!currentProjectId) return null;
 
   const currentProject = projects[currentProjectId];
+  const currentProjectFolderName = currentProject.path.split("/").pop();
 
   return (
     <div className="w-full">
@@ -79,7 +72,7 @@ export function ProjectSelector({ isOpen }: ProjectSelectorProps) {
                         {currentProject.name}
                       </div>
                       <div className="text-xs text-muted-foreground flex items-center gap-2">
-                        {currentProject.languages.length} languages
+                        {currentProject.fileLanguageMap.length} languages
                       </div>
                     </div>
                   </div>
@@ -99,12 +92,12 @@ export function ProjectSelector({ isOpen }: ProjectSelectorProps) {
                 <div className="font-medium">{currentProject.name}</div>
               </div>
               <div className="text-xs text-muted-foreground mb-2">
-                {currentProject.description || "No description"}
+                {currentProjectFolderName}
               </div>
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Globe className="w-3 h-3" />
-                  {currentProject.languages.length}
+                  {currentProject.fileLanguageMap.length}
                 </div>
                 <div className="flex items-center gap-1">
                   <FileText className="w-3 h-3" />
@@ -116,105 +109,110 @@ export function ProjectSelector({ isOpen }: ProjectSelectorProps) {
 
           <DropdownMenuSeparator />
 
-          <div className="p-2">
-            <div className="text-xs font-medium text-muted-foreground mb-2">
-              ALL PROJECTS
-            </div>
-            <div className="max-h-48 overflow-y-auto space-y-1">
-              {Object.values(projects)?.map((project) => (
-                <DropdownMenuItem
-                  key={project.id}
-                  onClick={() => switchProject(project.id)}
-                  className={cn(
-                    "cursor-pointer p-3 rounded-lg",
-                    project.id === currentProject.id && "bg-primary/10",
-                  )}
-                >
-                  <div className="flex items-center gap-3 w-full">
-                    <div className="w-6 h-6 rounded bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                      <FolderOpen className="w-3 h-3 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{project.name}</div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-2">
-                        {project.languages.length} languages •{" "}
-                        {project.translationCount} keys
-                      </div>
-                    </div>
-                  </div>
-                </DropdownMenuItem>
-              ))}
-            </div>
-          </div>
-
-          <DropdownMenuSeparator />
-
-          <Dialog
-            open={isCreateDialogOpen}
-            onOpenChange={setIsCreateDialogOpen}
-          >
-            <DialogTrigger asChild>
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create New Project
-              </DropdownMenuItem>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Create New Project</DialogTitle>
-                <DialogDescription>
-                  Set up a new translation project with its own settings and
-                  data.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="project-name">Project Name</Label>
-                  <Input
-                    id="project-name"
-                    placeholder="My Translation Project"
-                    value={newProject.name}
-                    onChange={(e) =>
-                      setNewProject({ ...newProject, name: e.target.value })
-                    }
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="project-description">Description</Label>
-                  <Textarea
-                    id="project-description"
-                    placeholder="Brief description of this project..."
-                    value={newProject.description}
-                    onChange={(e) =>
-                      setNewProject({
-                        ...newProject,
-                        description: e.target.value,
-                      })
-                    }
-                    rows={3}
-                    className="mt-1"
-                  />
-                </div>
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsCreateDialogOpen(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleCreateProject}
-                    disabled={!newProject.name.trim()}
-                    className="flex-1"
-                  >
-                    Create Project
-                  </Button>
-                </div>
+          {projects && Object.keys(projects).length > 1 && (
+            <div className="p-2">
+              <div className="text-xs font-medium text-muted-foreground mb-2">
+                ALL PROJECTS
               </div>
-            </DialogContent>
-          </Dialog>
+              <div className="max-h-48 overflow-y-auto space-y-1">
+                {Object.values(projects)
+                  ?.filter((p) => p.id !== currentProjectId)
+                  .map((project) => (
+                    <DropdownMenuItem
+                      key={project.id}
+                      onClick={() => switchProject(project.id)}
+                      className={cn(
+                        "cursor-pointer p-3 rounded-lg",
+                        project.id === currentProject.id && "bg-primary/10",
+                      )}
+                    >
+                      <div className="flex items-center gap-3 w-full">
+                        <div className="w-6 h-6 rounded bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                          <FolderOpen className="w-3 h-3 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">
+                            {project.name}
+                          </div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-2">
+                            {project.i18nPath.length} languages •{" "}
+                            {project.translationCount} keys
+                          </div>
+                        </div>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* <DropdownMenuSeparator /> */}
+          {/*     <Dialog */}
+          {/*       open={isCreateDialogOpen} */}
+          {/*       onOpenChange={setIsCreateDialogOpen} */}
+          {/*     > */}
+          {/*       <DialogTrigger asChild> */}
+          {/*         <DropdownMenuItem onSelect={(e) => e.preventDefault()}> */}
+          {/*           <Plus className="w-4 h-4 mr-2" /> */}
+          {/*           Create New Project */}
+          {/*         </DropdownMenuItem> */}
+          {/*       </DialogTrigger> */}
+          {/*       <DialogContent className="sm:max-w-md"> */}
+          {/*         <DialogHeader> */}
+          {/*           <DialogTitle>Create New Project</DialogTitle> */}
+          {/*           <DialogDescription> */}
+          {/*             Set up a new translation project with its own settings and */}
+          {/*             data. */}
+          {/*           </DialogDescription> */}
+          {/*         </DialogHeader> */}
+          {/*         <div className="space-y-4"> */}
+          {/*           <div> */}
+          {/*             <Label htmlFor="project-name">Project Name</Label> */}
+          {/*             <Input */}
+          {/*               id="project-name" */}
+          {/*               placeholder="My Translation Project" */}
+          {/*               value={newProject.name} */}
+          {/*               onChange={(e) => */}
+          {/*                 setNewProject({ ...newProject, name: e.target.value }) */}
+          {/*               } */}
+          {/*               className="mt-1" */}
+          {/*             /> */}
+          {/*           </div> */}
+          {/*           <div> */}
+          {/*             <Label htmlFor="project-description">Description</Label> */}
+          {/*             <Textarea */}
+          {/*               id="project-description" */}
+          {/*               placeholder="Brief description of this project..." */}
+          {/*               value={newProject.description} */}
+          {/*               onChange={(e) => */}
+          {/*                 setNewProject({ */}
+          {/*                   ...newProject, */}
+          {/*                   description: e.target.value, */}
+          {/*                 }) */}
+          {/*               } */}
+          {/*               rows={3} */}
+          {/*               className="mt-1" */}
+          {/*             /> */}
+          {/*           </div> */}
+          {/*           <div className="flex gap-3 pt-4"> */}
+          {/*             <Button */}
+          {/*               variant="outline" */}
+          {/*               onClick={() => setIsCreateDialogOpen(false)} */}
+          {/*               className="flex-1" */}
+          {/*             > */}
+          {/*               Cancel */}
+          {/*             </Button> */}
+          {/*             <Button */}
+          {/*               onClick={handleCreateProject} */}
+          {/*               disabled={!newProject.name.trim()} */}
+          {/*               className="flex-1" */}
+          {/*             > */}
+          {/*               Create Project */}
+          {/*             </Button> */}
+          {/*           </div> */}
+          {/*         </div> */}
+          {/*       </DialogContent> */}
+          {/*     </Dialog> */}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

@@ -26,11 +26,11 @@ export const routes: RouteItem[] = [
     element: <EditorPage />,
     icon: Edit3,
   },
-
-  {
-    path: "/settings",
-    name: "Settings",
-    element: <SettingsPage />,
-    icon: Settings,
-  },
+  // TODO: implement settings
+  // {
+  //   path: "/settings",
+  //   name: "Settings",
+  //   element: <SettingsPage />,
+  //   icon: Settings,
+  // },
 ];

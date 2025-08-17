@@ -15,5 +15,3 @@ export const COMMON_LANGUAGES = Object.freeze([
   { code: "sv", name: "Swedish", flag: "🇸🇪" },
   { code: "no", name: "Norwegian", flag: "🇳🇴" },
 ]);
-
-export type LanguageCode = (typeof COMMON_LANGUAGES)[number]["code"];
