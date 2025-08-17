@@ -1,11 +1,8 @@
-declare namespace JSX {
-  interface IntrinsicElements {
-    input: React.DetailedHTMLProps<
-      React.InputHTMLAttributes<HTMLInputElement>,
-      HTMLInputElement
-    > & {
-      webkitdirectory?: string;
-      directory?: string;
-    };
+import * as React from "react";
+
+declare module "react" {
+  interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
+    directory?: string;
+    webkitdirectory?: string;
   }
 }

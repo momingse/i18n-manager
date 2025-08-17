@@ -2,15 +2,16 @@ import { Card } from "@/components/ui/card";
 import { FolderUploadStep } from "./steps/FolderUploadStep";
 import { I18nConfigStep } from "./steps/I18nConfigStep";
 import { ProjectNameStep } from "./steps/ProjectNameStep";
-import { DetectedLanguage, ProjectData } from "@/pages/Init";
+import { ProjectData } from "@/pages/Init";
+import { i18nLanguage } from "@/store/project";
 
 interface StepCardProps {
   step: number;
   projectData: ProjectData;
   setProjectData: React.Dispatch<React.SetStateAction<ProjectData>>;
-  detectedLanguages: DetectedLanguage[];
+  detectedLanguages: i18nLanguage[];
   setDetectedLanguages: React.Dispatch<
-    React.SetStateAction<DetectedLanguage[]>
+    React.SetStateAction<i18nLanguage[]>
   >;
   isCreating: boolean;
   onNext: () => void;

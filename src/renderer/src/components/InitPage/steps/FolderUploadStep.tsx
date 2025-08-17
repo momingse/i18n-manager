@@ -57,6 +57,7 @@ export function FolderUploadStep({
                 onChange={handleFolderSelect}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 webkitdirectory="true"
+                /* eslint-disable-next-line react/no-unknown-property */
                 directory="true"
                 multiple
               />
@@ -97,4 +98,3 @@ export function FolderUploadStep({
     </>
   );
 }
-
