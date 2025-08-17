@@ -29,9 +29,7 @@ export function FolderUploadStep({
       return;
     }
 
-    const folderPath = files[0].path
-      .substring(0, files[0].path.length - files[0].webkitRelativePath.length)
-      .replace(/[\\/]$/, "");
+    const folderPath = files[0].path.split("/").slice(0, -1).join("/");
     onFolderChange(folderPath);
   };
 

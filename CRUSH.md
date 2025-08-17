@@ -1,4 +1,4 @@
-# CRUSH.md for i18-manager
+# CRUSH.md for i18n-manager
 
 This file outlines the project's conventions and common commands for agentic coding.
 
