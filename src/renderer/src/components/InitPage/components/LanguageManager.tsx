@@ -5,11 +5,11 @@ import { ChevronDown, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { COMMON_LANGUAGES } from "@/constants/constants";
 import { useState } from "react";
-import { DetectedLanguage } from "@/pages/Init";
+import { i18nLanguage } from "@/store/project";
 
 interface LanguageManagerProps {
-  detectedLanguages: DetectedLanguage[];
-  setDetectedLanguages: React.Dispatch<React.SetStateAction<DetectedLanguage[]>>;
+  detectedLanguages: i18nLanguage[];
+  setDetectedLanguages: React.Dispatch<React.SetStateAction<i18nLanguage[]>>;
 }
 
 export function LanguageManager({
