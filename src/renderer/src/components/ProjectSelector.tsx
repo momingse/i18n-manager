@@ -135,7 +135,7 @@ export function ProjectSelector({ isOpen }: ProjectSelectorProps) {
                             {project.name}
                           </div>
                           <div className="text-xs text-muted-foreground flex items-center gap-2">
-                            {project.i18nPath.length} languages •{" "}
+                            {project.fileLanguageMap.length} languages •{" "}
                             {project.translationCount} keys
                           </div>
                         </div>
