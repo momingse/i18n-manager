@@ -5,19 +5,16 @@ import { Low } from "lowdb";
 import { JSONFile } from "lowdb/node";
 import { join } from "path";
 
-// Database schema
 type DatabaseData = {
   storage: Record<string, string>;
 };
 
-// Default data
 const defaultData: DatabaseData = {
   storage: {},
 };
 
 let db: Low<DatabaseData>;
 
-// Initialize database
 export const initDatabase = async () => {
   // Get user data directory
   const userDataPath = app.getPath("userData");
@@ -46,8 +43,7 @@ export const initDatabase = async () => {
   }
 };
 
-// IPC Handlers
-export const setupIPCHandlers = () => {
+export const setupStorageIPCHandler = () => {
   // Get item from storage
   ipcMain.handle(
     "storage:getItem",
