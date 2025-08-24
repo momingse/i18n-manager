@@ -12,15 +12,18 @@ import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { matchesAnyPattern } from "@/lib/searchPattern";
 import { cn } from "@/lib/utils";
 import { useProjectStore } from "@/store/project";
+import { useSidebarStore } from "@/store/sidebar";
 import {
   Check,
   ChevronDown,
   FileText,
+  Menu,
   Minus,
   Plus,
   Search,
   Sparkles,
-  X,
+  Upload,
+  X
 } from "lucide-react";
 import type React from "react";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -34,6 +37,8 @@ export default function UploadPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const dropDownRef = useRef(null);
+
+  const { toggle } = useSidebarStore();
 
   const { currentProjectId, projects, files } = useProjectStore();
   const currentProject = projects[currentProjectId ?? ""];
@@ -185,12 +190,21 @@ export default function UploadPage() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="container mx-auto px-6 py-8 max-w-4xl">
-        <div className="text-center mb-8 animate-in fade-in slide-in-from-top duration-600">
-          <h1 className="text-3xl font-bold mb-2">File Analysis</h1>
-          <p className="text-muted-foreground">
-            Select files from your project to analyze for translation
-          </p>
+      <div className="container mx-auto px-6 py-8 max-w-full">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="lg:hidden">
+              <Button variant="outline" onClick={toggle}>
+                <Menu className="w-6 h-6" />
+              </Button>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+              <Upload className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">File Analysis</h1>
+            </div>
+          </div>
         </div>
 
         <div className="animate-in fade-in slide-in-from-bottom duration-700 delay-200">
