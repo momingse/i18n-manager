@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { AlertTriangle, Info } from "lucide-react";
 import { FC, useEffect, useState } from "react";
 
@@ -92,13 +93,17 @@ export const ConfirmationDialog: FC<ConfirmationDialogProps> = ({
             <button
               onClick={onConfirm}
               disabled={!isValid}
-              className={`px-4 py-2 rounded-md transition-colors text-white ${
-                type === "danger"
-                  ? "bg-red-600 hover:bg-red-700 disabled:bg-red-400"
-                  : type === "warning"
-                    ? "bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-400"
-                    : "bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400"
-              } disabled:cursor-not-allowed`}
+              className={cn(
+                "px-4 py-2 rounded-md transition-colors text-white disabled:cursor-not-allowed",
+                {
+                  "bg-red-600 hover:bg-red-700 disabled:bg-red-400":
+                    type === "danger",
+                  "bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-400":
+                    type === "warning",
+                  "bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400":
+                    type === "info",
+                },
+              )}
             >
               {confirmText}
             </button>
