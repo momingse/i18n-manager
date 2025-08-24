@@ -182,9 +182,9 @@ export const SettingsPage: React.FC = () => {
     toast("success", { description: "Language added successfully" });
   };
 
-  const handleRemoveLanguage = (language: string) => {
+  const handleRemoveLanguage = (languageId: string) => {
     const languageExists = currentProject.fileLanguageMap.find(
-      (lang) => lang.language === language,
+      (lang) => lang.id === languageId,
     );
 
     if (!languageExists) return;
@@ -192,7 +192,7 @@ export const SettingsPage: React.FC = () => {
     updateProject({
       ...currentProject,
       fileLanguageMap: currentProject.fileLanguageMap.filter(
-        (lang) => lang.language !== language,
+        (lang) => lang.id !== languageId,
       ),
     });
 
@@ -449,7 +449,7 @@ export const SettingsPage: React.FC = () => {
                     {currentProject.fileLanguageMap.map(
                       (fileLanguage, index) => (
                         <div
-                          key={fileLanguage.language}
+                          key={fileLanguage.id}
                           className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors duration-200 animate-in fade-in slide-in-from-left"
                           style={{ animationDelay: `${index * 50}ms` }}
                         >
@@ -464,7 +464,7 @@ export const SettingsPage: React.FC = () => {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() =>
-                                handleRemoveLanguage(fileLanguage.language)
+                                handleRemoveLanguage(fileLanguage.id)
                               }
                               className="p-1 rounded transition-colors text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
