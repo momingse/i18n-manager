@@ -1,4 +1,4 @@
-import { ConfirmationDialog } from "@/components/setting/RemoveProjectConfirmationDialog";
+import { ConfirmationDialog } from "@/components/SettingPage/RemoveProjectConfirmationDialog";
 import { i18nLanguage, useProjectStore } from "@/store/project";
 import { useSidebarStore } from "@/store/sidebar";
 import {

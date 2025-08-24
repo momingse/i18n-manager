@@ -433,8 +433,8 @@ export default function EditorPage() {
   return (
     <div className="h-full overflow-y-auto bg-gradient-to-br from-background via-background to-muted/10">
       <div className="container mx-auto px-6 py-6 max-w-full">
-        {/* Clean Header */}
         <div className="mb-6">
+          {/* Clean Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="lg:hidden">
@@ -723,7 +723,9 @@ export default function EditorPage() {
                         <TableCell
                           className={cn(
                             "font-medium left-0 z-10",
-                            globalIndex % 2 === 0 ? "bg-background/40" : "bg-muted/5",
+                            globalIndex % 2 === 0
+                              ? "bg-background/40"
+                              : "bg-muted/5",
                           )}
                         >
                           <div className="relative">

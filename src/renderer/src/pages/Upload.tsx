@@ -23,7 +23,7 @@ import {
   Search,
   Sparkles,
   Upload,
-  X
+  X,
 } from "lucide-react";
 import type React from "react";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -169,7 +169,11 @@ export default function UploadPage() {
         description: `Found translatable content in ${selectedFiles.length} files`,
       });
 
-      naviagation("/analyze");
+      naviagation("/translation-result", {
+        state: {
+          files: selectedFiles,
+        },
+      });
     } catch (error) {
       toast.error("Analysis failed", {
         description: "Please try again",

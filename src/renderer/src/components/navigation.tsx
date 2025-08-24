@@ -52,6 +52,7 @@ export function Navigation() {
 
         <div className="flex-1 px-2 py-6 space-y-2">
           {routes.map((item, index) => {
+            if (item.hidden) return null;
             const Icon = item.icon;
             const isActive = pathname === item.path;
             return (
@@ -114,6 +115,7 @@ export function Navigation() {
 
             <div className="px-4 py-6 space-y-2">
               {routes.map((item, index) => {
+                if (item.hidden) return null;
                 const Icon = item.icon;
                 const isActive = pathname === item.path;
                 return (
