@@ -98,7 +98,7 @@ export function Navigation() {
       </nav>
 
       {/* Mobile Menu */}
-      {!isOpen && (
+      {isOpen && (
         <div className="lg:hidden fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
           <div className="fixed inset-y-0 left-0 w-64 bg-card border-r border-border shadow-xl animate-in slide-in-from-left duration-300">
             <div className="flex items-center justify-between h-16 px-6 border-b border-border/50">
