@@ -44,7 +44,7 @@ type ProjectStoreActions = {
   ) => void;
   switchProject: (projectId: string) => void;
   updateProject: (project: Project) => void;
-  addLanguage: (language: i18nLanguage) => void;
+  removeCurrentProject: () => void;
   removeLanguage: (languageId: string) => void;
   fetchProjectFiles: () => Promise<void>;
 };
@@ -99,19 +99,18 @@ export const useProjectStore = create<ProjectStore>()(
         }));
       },
 
-      addLanguage: (i18nLanguage) => {
+      removeCurrentProject: () => {
         set((state) => {
-          const currentProject = state.projects[state.currentProjectId ?? ""];
-          if (!currentProject) return state;
-          const updatedCurrentProject: Project = {
-            ...currentProject,
-            fileLanguageMap: [...currentProject.fileLanguageMap, i18nLanguage],
-          };
+          if (!state.currentProjectId) return state;
+
+          // remove current project
+          const updatedProjects = { ...state.projects };
+          delete updatedProjects[state.currentProjectId];
+
+          // check if there is another project, if yes, set it as current
           return {
-            projects: {
-              ...state.projects,
-              [updatedCurrentProject.id]: updatedCurrentProject,
-            },
+            currentProjectId: Object.keys(updatedProjects)[0] || null,
+            projects: updatedProjects,
           };
         });
       },
