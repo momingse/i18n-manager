@@ -20,47 +20,35 @@ const readDirectoryRecursive = async (
 
     for (const entry of entries) {
       const fullPath = path.join(dirPath, entry.name);
+      const isDirectory = entry.isDirectory();
+      let projectFile: ProjectFile;
 
       try {
         const stats = await fs.stat(fullPath);
-
-        const projectFile: ProjectFile = {
+        projectFile = {
           name: entry.name,
           path: fullPath,
-          isDirectory: entry.isDirectory(),
-          size: entry.isDirectory() ? undefined : stats.size,
+          isDirectory,
+          size: isDirectory ? undefined : stats.size,
           modified: stats.mtime,
         };
-
-        // If it's a directory, recursively read its contents
-        if (entry.isDirectory()) {
-          const subFiles = await readDirectoryRecursive(fullPath);
-          files.push(...subFiles);
-        } else {
-          files.push(projectFile);
-        }
       } catch (statError) {
-        // If we can't get stats for a specific file, still include basic info
         console.warn(`Could not get stats for ${fullPath}:`, statError);
-        const projectFile: ProjectFile = {
+        projectFile = {
           name: entry.name,
           path: fullPath,
-          isDirectory: entry.isDirectory(),
+          isDirectory,
         };
+      }
 
-        files.push(projectFile);
+      files.push(projectFile);
 
-        // Even if we couldn't get stats, still try to read subdirectory if it's a directory
-        if (entry.isDirectory()) {
-          try {
-            const subFiles = await readDirectoryRecursive(fullPath);
-            files.push(...subFiles);
-          } catch (subDirError) {
-            console.warn(
-              `Could not read subdirectory ${fullPath}:`,
-              subDirError,
-            );
-          }
+      if (isDirectory) {
+        try {
+          const subFiles = await readDirectoryRecursive(fullPath);
+          files.push(...subFiles);
+        } catch (subDirError) {
+          console.warn(`Could not read subdirectory ${fullPath}:`, subDirError);
         }
       }
     }
