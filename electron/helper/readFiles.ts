@@ -90,4 +90,17 @@ export const setupReadFilesIPCHandler = () => {
       }
     },
   );
+
+  ipcMain.handle(
+    "readFiles:read-file-content",
+    async (event, filePath: string): Promise<string | null> => {
+      try {
+        const content = await fs.readFile(filePath, "utf-8");
+        return content;
+      } catch (error) {
+        console.error(`Failed to read file content from ${filePath}:`, error);
+        return null;
+      }
+    },
+  );
 };
