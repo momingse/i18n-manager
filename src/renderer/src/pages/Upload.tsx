@@ -70,6 +70,8 @@ export default function UploadPage() {
 
     let results = files;
 
+    // TODO: exclude .gitignore files
+
     // Apply inclusion filters (if any)
     if (inclusionPatterns.length > 0) {
       results = files.filter((file) =>
