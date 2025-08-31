@@ -141,11 +141,9 @@ export const useProjectStore = create<ProjectStore>()(
           return;
         }
         try {
-          const files =
-            (await window.ipcRenderer.invoke(
-              "readFiles:read-project-files",
-              currentProject.path,
-            )) || [];
+          const files = await window.electronAPI.readFiles.readProjectFiles(
+            currentProject.path,
+          );
           set({ files });
         } catch (error) {
           console.error("Failed to fetch project files:", error);

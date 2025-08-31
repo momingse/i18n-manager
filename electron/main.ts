@@ -1,9 +1,11 @@
 import { app, BrowserWindow } from "electron";
 // import { createRequire } from "node:module";
-import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { initDatabase, setupStorageIPCHandler } from "./helper/storage";
-import { setupReadFilesIPCHandler } from "./helper/readFiles";
+import { fileURLToPath } from "node:url";
+import { setupLLMIPCHandler } from "./ipc/llm";
+import { setupReadFilesIPCHandler } from "./ipc/readFiles";
+import { setupStorageIPCHandler } from "./ipc/storage";
+import { initDatabase } from "./helper/storage";
 
 // const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -55,6 +57,15 @@ function createWindow() {
     win.webContents.once("dom-ready", () => {
       win!.webContents.openDevTools();
     });
+
+    win.webContents.on(
+      "console-message",
+      (event, level, message, line, sourceId) => {
+        console.log(
+          `Renderer log [Level ${level}]: ${message} (Line: ${line}, Source: ${sourceId})`,
+        );
+      },
+    );
   }
 }
 
@@ -81,6 +92,7 @@ app.whenReady().then(async () => {
 
   setupStorageIPCHandler();
   setupReadFilesIPCHandler();
+  setupLLMIPCHandler();
 
   createWindow();
 });

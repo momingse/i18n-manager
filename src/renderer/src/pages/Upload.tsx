@@ -9,10 +9,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
+import translationWithLanguages from "@/lib/aiTransaction";
 import { matchesAnyPattern } from "@/lib/searchPattern";
 import { cn } from "@/lib/utils";
+import { useLLMStore } from "@/store/llm";
 import { useProjectStore } from "@/store/project";
 import { useSidebarStore } from "@/store/sidebar";
+import { useTranslationStore } from "@/store/translation";
 import {
   Check,
   ChevronDown,
@@ -38,7 +41,9 @@ export default function UploadPage() {
 
   const dropDownRef = useRef(null);
 
+  const { llmProvider, llmConfig } = useLLMStore();
   const { toggle } = useSidebarStore();
+  const { setTranslationResult } = useTranslationStore();
 
   const { currentProjectId, projects, files } = useProjectStore();
   const currentProject = projects[currentProjectId ?? ""];
@@ -160,21 +165,50 @@ export default function UploadPage() {
       return;
     }
 
+    const languages = currentProject.fileLanguageMap.map(
+      (lang) => lang.language,
+    );
+
     setIsAnalyzing(true);
     try {
-      // Simulate AI analysis
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const translationResult = await Promise.all(
+        selectedFiles.map(async (filePath) => {
+          const fileContent =
+            await window.electronAPI.readFiles.readFileContent(filePath);
+
+          return translationWithLanguages(
+            llmProvider,
+            llmConfig,
+            fileContent,
+            languages,
+          );
+        }),
+      );
+
+      const mergedResult = translationResult.reduce(
+        (acc, fileTranslationResult) => {
+          Object.keys(fileTranslationResult).forEach((lang) => {
+            if (!acc[lang]) {
+              acc[lang] = {};
+            }
+            Object.keys(fileTranslationResult[lang]).forEach((key) => {
+              acc[lang][key] = fileTranslationResult[lang][key];
+            });
+          });
+          return acc;
+        },
+        {},
+      );
+
+      setTranslationResult(mergedResult);
 
       toast("Analysis complete", {
         description: `Found translatable content in ${selectedFiles.length} files`,
       });
 
-      naviagation("/translation-result", {
-        state: {
-          files: selectedFiles,
-        },
-      });
+      naviagation("/translation-result");
     } catch (error) {
+      console.error("Analysis failed:", error);
       toast.error("Analysis failed", {
         description: "Please try again",
       });

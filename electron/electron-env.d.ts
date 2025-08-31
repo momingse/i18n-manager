@@ -1,5 +1,7 @@
 /// <reference types="vite-plugin-electron/electron-env" />
 
+import { LLMConfig, LLMProvider } from "./types/llm";
+
 declare namespace NodeJS {
   interface ProcessEnv {
     /**
@@ -21,16 +23,38 @@ declare namespace NodeJS {
   }
 }
 
+type IpcRendererHandler<K extends keyof IPCContract> = (
+  ...args: IPCContract[K]["args"]
+) => Promise<IPCContract[K]["return"]>;
+
 // Used in Renderer process, expose in `preload.ts`
-interface Window {
-  ipcRenderer: import("electron").IpcRenderer;
-  electronAPI: {
-    storage: {
-      getItem: (key: string) => Promise<string | null>;
-      setItem: (key: string, value: string) => Promise<boolean>;
-      removeItem: (key: string) => Promise<boolean>;
-      getAllKeys: () => Promise<string[]>;
-      clear: () => Promise<boolean>;
+declare global {
+  interface Window {
+    ipcRenderer: import("electron").IpcRenderer;
+    electronAPI: {
+      storage: {
+        // getItem: (key: string) => Promise<string | null>;
+        getItem: (key: string) => Promise<string | null>;
+        setItem: (key: string, value: string) => Promise<boolean>;
+        removeItem: (key: string) => Promise<boolean>;
+      };
+      readFiles: {
+        readProjectFiles: (projectPath: string) => Promise<ProjectFile[]>;
+        readFileContent: (filePath: string) => Promise<string>;
+      };
+      llm: {
+        storeApiKey: (
+          apiKey: string,
+          provider: LLMProvider,
+        ) => Promise<boolean>;
+        deleteApiKey: (provider: LLMProvider) => Promise<boolean>;
+        hasApiKey: (provider: LLMProvider) => Promise<boolean>;
+        translationFile: (
+          provider: LLMProvider,
+          llmConfig: LLMConfig,
+          prompt: string,
+        ) => Promise<any>;
+      };
     };
-  };
+  }
 }

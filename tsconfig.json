@@ -23,11 +23,11 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/renderer/src/*"],
-      "@renderer/*": ["src/renderer/src/*"]
+      "@renderer/*": ["src/renderer/src/*"],
     }
 
   },
   "include": ["src", "electron"],
-  "exclude": ["**/components/ui/**"],
+  "exclude": ["**/components/ui/**", "types/"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
