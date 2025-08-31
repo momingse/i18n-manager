@@ -11,13 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSidebarStore } from "@/store/sidebar";
 import { useTranslationStore } from "@/store/translation";
-import {
-  CheckCircle,
-  Languages,
-  Menu,
-  Save,
-  X
-} from "lucide-react";
+import { CheckCircle, Languages, Menu, Save, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -138,7 +132,7 @@ export default function TranslationResultsPage() {
                 >
                   {lang}
                   <Badge variant="secondary" className="text-xs">
-                    {translationResult[lang].length}
+                    {Object.keys(translationResult[lang]).length}
                   </Badge>
                 </TabsTrigger>
               ))}
@@ -220,36 +214,36 @@ export default function TranslationResultsPage() {
                                   </div>
                                 )}
 
-                              {/*   {entry.sourceFile && ( */}
-                              {/*     <div className="flex items-center gap-2 text-xs text-muted-foreground"> */}
-                              {/*       <FileText className="w-3 h-3" /> */}
-                              {/*       {entry.sourceFile} */}
-                              {/*       {entry.lineNumber && ( */}
-                              {/*         <span>:{entry.lineNumber}</span> */}
-                              {/*       )} */}
-                              {/*     </div> */}
-                              {/*   )} */}
-                              {/* </div> */}
+                                {/*   {entry.sourceFile && ( */}
+                                {/*     <div className="flex items-center gap-2 text-xs text-muted-foreground"> */}
+                                {/*       <FileText className="w-3 h-3" /> */}
+                                {/*       {entry.sourceFile} */}
+                                {/*       {entry.lineNumber && ( */}
+                                {/*         <span>:{entry.lineNumber}</span> */}
+                                {/*       )} */}
+                                {/*     </div> */}
+                                {/*   )} */}
+                                {/* </div> */}
 
-                              {/* <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"> */}
-                              {/*   <Button */}
-                              {/*     variant="ghost" */}
-                              {/*     size="sm" */}
-                              {/*     onClick={() => */}
-                              {/*       handleEditStart(entry.key, entry.value) */}
-                              {/*     } */}
-                              {/*     className="hover:bg-blue-500/20 hover:text-blue-600" */}
-                              {/*   > */}
-                              {/*     <Edit3 className="w-4 h-4" /> */}
-                              {/*   </Button> */}
-                              {/*   <Button */}
-                              {/*     variant="ghost" */}
-                              {/*     size="sm" */}
-                              {/*     onClick={() => handleRemoveKey(entry.key)} */}
-                              {/*     className="hover:bg-destructive/20 hover:text-destructive" */}
-                              {/*   > */}
-                              {/*     <Trash2 className="w-4 h-4" /> */}
-                              {/*   </Button> */}
+                                {/* <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"> */}
+                                {/*   <Button */}
+                                {/*     variant="ghost" */}
+                                {/*     size="sm" */}
+                                {/*     onClick={() => */}
+                                {/*       handleEditStart(entry.key, entry.value) */}
+                                {/*     } */}
+                                {/*     className="hover:bg-blue-500/20 hover:text-blue-600" */}
+                                {/*   > */}
+                                {/*     <Edit3 className="w-4 h-4" /> */}
+                                {/*   </Button> */}
+                                {/*   <Button */}
+                                {/*     variant="ghost" */}
+                                {/*     size="sm" */}
+                                {/*     onClick={() => handleRemoveKey(entry.key)} */}
+                                {/*     className="hover:bg-destructive/20 hover:text-destructive" */}
+                                {/*   > */}
+                                {/*     <Trash2 className="w-4 h-4" /> */}
+                                {/*   </Button> */}
                               </div>
                             </div>
                           </div>
