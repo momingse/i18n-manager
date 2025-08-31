@@ -45,7 +45,7 @@ Output format: Return ONLY a valid JSON object (no explanations or additional te
     return result;
   } catch (error) {
     console.error("Error making LLM request:", error);
-    return {};
+    throw error;
   }
 };
 
