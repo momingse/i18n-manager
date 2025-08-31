@@ -1,3 +1,4 @@
+import { useLLMStore } from "@/store/llm";
 import {
   Brain,
   ChevronDown,
@@ -15,8 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { LLMConfig, LLMProvider } from "@shared/llm";
-import { useLLMStore } from "@/store/llm";
+import { LLMConfig, LLMProvider } from "@/types/llm";
 
 interface LLMField {
   key: keyof LLMConfig | "apiKey";

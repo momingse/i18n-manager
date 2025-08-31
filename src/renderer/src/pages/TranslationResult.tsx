@@ -9,20 +9,16 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useProjectStore } from "@/store/project";
 import { useSidebarStore } from "@/store/sidebar";
 import { useTranslationStore } from "@/store/translation";
 import {
   CheckCircle,
-  Edit3,
-  FileText,
   Languages,
   Menu,
   Save,
-  Trash2,
-  X,
+  X
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 

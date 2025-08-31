@@ -1,6 +1,6 @@
-import I18nConfigurePanel from "@/components/SettingPage/i18nConfigurePanel";
+import I18nConfigurePanel from "@/components/SettingPage/I18nConfigurePanel";
 import LanguageSupportManagementPanel from "@/components/SettingPage/LanguageSupportManagementPanel";
-import { LLMConfigurePanel } from "@/components/SettingPage/LLMConfigurePanel"; // Import the new component
+import { LLMConfigurePanel } from "@/components/SettingPage/LLMConfigurePanel";
 import ProjectFolderConfigurePanel from "@/components/SettingPage/ProjectFolderConfigurePanel";
 import { ConfirmationDialog } from "@/components/SettingPage/RemoveProjectConfirmationDialog";
 import { useProjectStore } from "@/store/project";
@@ -11,7 +11,7 @@ import {
   ChevronRight,
   Menu,
   Settings,
-  Trash2
+  Trash2,
 } from "lucide-react";
 import React, { useState } from "react";
 
@@ -109,8 +109,8 @@ export const SettingsPage: React.FC = () => {
                       Delete Project
                     </h3>
                     <p className="text-sm text-red-600 dark:text-red-400/80 mb-4">
-                      Permanently delete this project and all associated
-                      data. This action cannot be undone.
+                      Permanently delete this project and all associated data.
+                      This action cannot be undone.
                     </p>
                     <button
                       onClick={() => setShowDeleteDialog(true)}
