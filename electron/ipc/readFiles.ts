@@ -1,6 +1,6 @@
-import { ipcMain } from "electron";
 import * as fs from "fs/promises";
 import * as path from "path";
+import { handleIPC, ReadFilesIPCChannel } from ".";
 
 export type ProjectFile = {
   name: string;
@@ -41,8 +41,6 @@ const readDirectoryRecursive = async (
         };
       }
 
-      files.push(projectFile);
-
       if (isDirectory) {
         try {
           const subFiles = await readDirectoryRecursive(fullPath);
@@ -50,6 +48,8 @@ const readDirectoryRecursive = async (
         } catch (subDirError) {
           console.warn(`Could not read subdirectory ${fullPath}:`, subDirError);
         }
+      } else {
+        files.push(projectFile);
       }
     }
   } catch (error) {
@@ -60,9 +60,9 @@ const readDirectoryRecursive = async (
 };
 
 export const setupReadFilesIPCHandler = () => {
-  ipcMain.handle(
-    "readFiles:read-project-files",
-    async (event, projectPath: string): Promise<ProjectFile[]> => {
+  handleIPC(
+    ReadFilesIPCChannel.readProjectFiles,
+    async (event, projectPath) => {
       try {
         // Check if the project path exists
         await fs.access(projectPath);
@@ -90,4 +90,14 @@ export const setupReadFilesIPCHandler = () => {
       }
     },
   );
+
+  handleIPC(ReadFilesIPCChannel.readFileContent, async (event, filePath) => {
+    try {
+      const content = await fs.readFile(filePath, "utf-8");
+      return content;
+    } catch (error) {
+      console.error(`Failed to read file content from ${filePath}:`, error);
+      return "";
+    }
+  });
 };

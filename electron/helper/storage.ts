@@ -1,5 +1,4 @@
-// main.ts or main/index.ts
-import { app, ipcMain } from "electron";
+import { app } from "electron";
 import { mkdirSync } from "fs";
 import { Low } from "lowdb";
 import { JSONFile } from "lowdb/node";
@@ -43,75 +42,37 @@ export const initDatabase = async () => {
   }
 };
 
-export const setupStorageIPCHandler = () => {
-  // Get item from storage
-  ipcMain.handle(
-    "storage:getItem",
-    async (_, key: string): Promise<string | null> => {
-      try {
-        await db.read();
-        const value = db.data.storage[key];
-        return value || null;
-      } catch (error) {
-        console.error("Error getting item from storage:", error);
-        return null;
-      }
-    },
-  );
+export const storeGetItem = async (key: string): Promise<string | null> => {
+  try {
+    await db.read();
+    const value = db.data.storage[key];
+    return value || null;
+  } catch (error) {
+    console.error("Error getting item from storage:", error);
+    return null;
+  }
+};
 
-  // Set item in storage
-  ipcMain.handle(
-    "storage:setItem",
-    async (_, key: string, value: string): Promise<boolean> => {
-      try {
-        await db.read();
-        db.data.storage[key] = value;
-        await db.write();
-        return true;
-      } catch (error) {
-        console.error("Error setting item in storage:", error);
-        return false;
-      }
-    },
-  );
+export const storeSetItem = async (key: string, value: string): Promise<boolean> => {
+  try {
+    await db.read();
+    db.data.storage[key] = value;
+    await db.write();
+    return true
+  } catch (error) {
+    console.error("Error setting item in storage:", error);
+    return false
+  }
+};
 
-  // Remove item from storage
-  ipcMain.handle(
-    "storage:removeItem",
-    async (_, key: string): Promise<boolean> => {
-      try {
-        await db.read();
-        delete db.data.storage[key];
-        await db.write();
-        return true;
-      } catch (error) {
-        console.error("Error removing item from storage:", error);
-        return false;
-      }
-    },
-  );
-
-  // Get all keys (useful for debugging)
-  ipcMain.handle("storage:getAllKeys", async (): Promise<string[]> => {
-    try {
-      await db.read();
-      return Object.keys(db.data.storage);
-    } catch (error) {
-      console.error("Error getting all keys from storage:", error);
-      return [];
-    }
-  });
-
-  // Clear all storage (useful for debugging)
-  ipcMain.handle("storage:clear", async (): Promise<boolean> => {
-    try {
-      await db.read();
-      db.data.storage = {};
-      await db.write();
-      return true;
-    } catch (error) {
-      console.error("Error clearing storage:", error);
-      return false;
-    }
-  });
+export const storeRemoveItem = async (key: string): Promise<boolean> => {
+  try {
+    await db.read();
+    delete db.data.storage[key];
+    await db.write();
+    return true;
+  } catch (error) {
+    console.error("Error removing item from storage:", error);
+    return false
+  }
 };

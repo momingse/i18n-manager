@@ -1,4 +1,5 @@
-import { ipcRenderer, contextBridge } from "electron";
+import { contextBridge, ipcRenderer } from "electron";
+import { LLMIPCChannel, ReadFilesIPCChannel, StorageIPCChannel } from "./ipc";
 
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld("ipcRenderer", {
@@ -27,18 +28,34 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
 
 contextBridge.exposeInMainWorld("electronAPI", {
   storage: {
-    getItem: (key: string): Promise<string | null> =>
-      ipcRenderer.invoke("storage:getItem", key),
-
-    setItem: (key: string, value: string): Promise<boolean> =>
-      ipcRenderer.invoke("storage:setItem", key, value),
+    getItem: (key) => ipcRenderer.invoke(StorageIPCChannel.getItem, key),
+    setItem: (key, value) =>
+      ipcRenderer.invoke(StorageIPCChannel.setItem, key, value),
 
     removeItem: (key: string): Promise<boolean> =>
-      ipcRenderer.invoke("storage:removeItem", key),
-
-    getAllKeys: (): Promise<string[]> =>
-      ipcRenderer.invoke("storage:getAllKeys"),
-
-    clear: (): Promise<boolean> => ipcRenderer.invoke("storage:clear"),
+      ipcRenderer.invoke(StorageIPCChannel.removeItem, key),
   },
-});
+
+  readFiles: {
+    readProjectFiles: (projectPath) =>
+      ipcRenderer.invoke(ReadFilesIPCChannel.readProjectFiles, projectPath),
+
+    readFileContent: (filePath) =>
+      ipcRenderer.invoke(ReadFilesIPCChannel.readFileContent, filePath),
+  },
+  llm: {
+    storeApiKey: (apiKey, provider) =>
+      ipcRenderer.invoke(LLMIPCChannel.storeApiKey, apiKey, provider),
+    deleteApiKey: (provider) =>
+      ipcRenderer.invoke(LLMIPCChannel.deleteApiKey, provider),
+    hasApiKey: (provider) =>
+      ipcRenderer.invoke(LLMIPCChannel.hasApiKey, provider),
+    translationFile: (provider, llmConfig, prompt) =>
+      ipcRenderer.invoke(
+        LLMIPCChannel.translationFile,
+        provider,
+        llmConfig,
+        prompt,
+      ),
+  },
+} satisfies Window["electronAPI"]);
