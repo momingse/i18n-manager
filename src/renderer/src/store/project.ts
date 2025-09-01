@@ -46,6 +46,7 @@ type ProjectStoreActions = {
   updateProject: (project: Project) => void;
   removeCurrentProject: () => void;
   removeLanguage: (languageId: string) => void;
+  updateData: (data: Record<string, Record<string, string>>) => void;
   fetchProjectFiles: () => Promise<void>;
 };
 
@@ -124,6 +125,30 @@ export const useProjectStore = create<ProjectStore>()(
             fileLanguageMap: currentProject.fileLanguageMap.filter(
               (lang) => lang.id !== languageId,
             ),
+          };
+          return {
+            projects: {
+              ...state.projects,
+              [updatedCurrentProject.id]: updatedCurrentProject,
+            },
+          };
+        });
+      },
+
+      updateData: (data) => {
+        set((state) => {
+          const currentProject = state.projects[state.currentProjectId ?? ""];
+          if (!currentProject) return state;
+
+          const mergedData = { ...currentProject.data };
+          for (const lang in data) {
+            if (Object.prototype.hasOwnProperty.call(data, lang)) {
+              mergedData[lang] = { ...(mergedData[lang] || {}), ...data[lang] };
+            }
+          }
+          const updatedCurrentProject: Project = {
+            ...currentProject,
+            data: mergedData,
           };
           return {
             projects: {

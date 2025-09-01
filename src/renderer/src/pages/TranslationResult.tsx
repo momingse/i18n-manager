@@ -1,3 +1,7 @@
+import ConflictResolver, {
+  Conflict,
+  ConflictResolution,
+} from "@/components/TranslationResultPage/ConflictResolver";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,11 +11,28 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useProjectStore } from "@/store/project";
 import { useSidebarStore } from "@/store/sidebar";
 import { useTranslationStore } from "@/store/translation";
-import { CheckCircle, Languages, Menu, Save, X } from "lucide-react";
+import {
+  CheckCircle,
+  Edit3,
+  Languages,
+  Menu,
+  Save,
+  Trash2,
+  X
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -31,10 +52,19 @@ export default function TranslationResultsPage() {
   const [selectedLanguage, setSelectedLanguage] = useState("");
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState("");
+  const [keyToRemove, setKeyToRemove] = useState<{
+    language: string;
+    key: string;
+  } | null>(null);
+
+  const [conflicts, setConflicts] = useState<Conflict[]>([]);
+  const [showConflictResolver, setShowConflictResolver] = useState(false);
 
   const { toggle } = useSidebarStore();
-
-  const { translationResult } = useTranslationStore();
+  const { translationResult, updateTranslation, removeTranslationKey } =
+    useTranslationStore();
+  const { currentProjectId, projects, updateData } = useProjectStore();
+  const currentProject = projects[currentProjectId ?? ""];
 
   const navigation = useNavigate();
 
@@ -53,11 +83,14 @@ export default function TranslationResultsPage() {
   };
 
   const handleEditSave = () => {
-    toast("Translation updated", {
-      description: `Updated "${editingKey}" successfully`,
-    });
-    setEditingKey(null);
-    setEditingValue("");
+    if (editingKey) {
+      updateTranslation(selectedLanguage, editingKey, editingValue);
+      toast("Translation updated", {
+        description: `Updated "${editingKey}" successfully`,
+      });
+      setEditingKey(null);
+      setEditingValue("");
+    }
   };
 
   const handleEditCancel = () => {
@@ -65,22 +98,125 @@ export default function TranslationResultsPage() {
     setEditingValue("");
   };
 
-  const handleRemoveKey = (key: string) => {
-    toast("Translation removed", {
-      description: `Removed "${key}" from translations`,
-    });
+  const handleRemoveKeyClick = (language: string, key: string) => {
+    setKeyToRemove({ language, key });
+  };
+
+  const handleRemoveCurrentLanguage = () => {
+    if (keyToRemove) {
+      removeTranslationKey(keyToRemove.language, keyToRemove.key);
+      toast("Translation removed", {
+        description: `Removed "${keyToRemove.key}" from ${keyToRemove.language}`,
+      });
+      setKeyToRemove(null);
+    }
+  };
+
+  const handleRemoveAllLanguages = () => {
+    if (keyToRemove && translationResult) {
+      const languages = Object.keys(translationResult);
+      languages.forEach((lang) => {
+        if (translationResult[lang][keyToRemove.key]) {
+          removeTranslationKey(lang, keyToRemove.key);
+        }
+      });
+      toast("Translation removed", {
+        description: `Removed "${keyToRemove.key}" from all languages`,
+      });
+      setKeyToRemove(null);
+    }
+  };
+
+  const handleCancelRemove = () => {
+    setKeyToRemove(null);
   };
 
   const handleWordClick = (entry: TranslationEntry) => {
     // TODO: handle context drawer open
   };
 
-  const handleSaveResults = () => {
-    // TODO: handle saving
-    toast("Results saved", {
-      description: "Translation results have been saved to your project",
+  const handleResolveConflict = (resolutions: ConflictResolution[]) => {
+    setShowConflictResolver(false);
+    setConflicts([]);
+
+    resolutions.forEach((resolution) => {
+      if (resolution.action === "useCustom") {
+        updateTranslation(
+          resolution.language,
+          resolution.key,
+          resolution.customValue,
+        );
+      }
+
+      if (resolution.action === "originalValue") {
+        removeTranslationKey(resolution.language, resolution.key);
+      }
+    });
+
+    toast("Conflicts resolved", {
+      description: "Translation conflicts have been resolved",
     });
   };
+
+  const handleSaveResults = async () => {
+    if (!translationResult) {
+      return;
+    }
+
+    // check conflicts
+    const languages = Object.keys(translationResult);
+    const conflicts = languages.reduce<Conflict[]>((acc, lang) => {
+      const translations = translationResult[lang];
+      const projectData = currentProject.data[lang] || {};
+
+      Object.keys(translations).forEach((translationKey) => {
+        if (
+          translationKey in projectData &&
+          projectData[translationKey] !== translations[translationKey]
+        ) {
+          acc.push({
+            key: translationKey,
+            language: lang,
+            originalValue: projectData[translationKey],
+            newValue: translations[translationKey],
+          });
+        }
+      });
+
+      return acc;
+    }, []);
+
+    if (conflicts.length > 0) {
+      setConflicts(conflicts);
+      setShowConflictResolver(true);
+      return;
+    }
+
+    try {
+      updateData(translationResult);
+      toast("Results saved", {
+        description: "Translation results have been saved to your project",
+      });
+
+      navigation("/");
+    } catch (error) {
+      toast("Failed to save", {
+        description: "There was an error saving your translation results",
+      });
+    }
+  };
+
+  // Check if key exists in other languages
+  const getKeyLanguageCount = (key: string) => {
+    if (!translationResult) return 0;
+    return Object.keys(translationResult).filter(
+      (lang) => translationResult[lang][key],
+    ).length;
+  };
+
+  if (!currentProject) {
+    return null;
+  }
 
   if (!translationResult || Object.keys(translationResult).length === 0) {
     return null;
@@ -108,7 +244,7 @@ export default function TranslationResultsPage() {
           <div className="flex items-center gap-3">
             <Button
               onClick={handleSaveResults}
-              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 disabled:opacity-50"
             >
               <Save className="w-4 h-4 mr-2" />
               Save
@@ -156,9 +292,9 @@ export default function TranslationResultsPage() {
                   <CardContent>
                     <div className="space-y-4">
                       {Object.entries(translationResult[lang]).map(
-                        ([transitionKey, translationValue], index) => (
+                        ([translationKey, translationValue], index) => (
                           <div
-                            key={transitionKey}
+                            key={translationKey}
                             className="group p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-all duration-200 animate-in fade-in slide-in-from-left"
                             style={{ animationDelay: `${index * 50}ms` }}
                           >
@@ -166,7 +302,7 @@ export default function TranslationResultsPage() {
                               <div className="flex-1 space-y-2">
                                 <div className="flex items-center gap-2">
                                   <code className="text-sm font-mono bg-primary/10 text-primary px-2 py-1 rounded">
-                                    {transitionKey}
+                                    {translationKey}
                                   </code>
                                   {/* TODO: handle context drawer open */}
                                   {/* <Button */}
@@ -180,7 +316,7 @@ export default function TranslationResultsPage() {
                                   {/* </Button> */}
                                 </div>
 
-                                {editingKey === transitionKey ? (
+                                {editingKey === translationKey ? (
                                   <div className="flex items-center gap-2">
                                     <Input
                                       value={editingValue}
@@ -223,27 +359,32 @@ export default function TranslationResultsPage() {
                                 {/*       )} */}
                                 {/*     </div> */}
                                 {/*   )} */}
-                                {/* </div> */}
+                              </div>
 
-                                {/* <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"> */}
-                                {/*   <Button */}
-                                {/*     variant="ghost" */}
-                                {/*     size="sm" */}
-                                {/*     onClick={() => */}
-                                {/*       handleEditStart(entry.key, entry.value) */}
-                                {/*     } */}
-                                {/*     className="hover:bg-blue-500/20 hover:text-blue-600" */}
-                                {/*   > */}
-                                {/*     <Edit3 className="w-4 h-4" /> */}
-                                {/*   </Button> */}
-                                {/*   <Button */}
-                                {/*     variant="ghost" */}
-                                {/*     size="sm" */}
-                                {/*     onClick={() => handleRemoveKey(entry.key)} */}
-                                {/*     className="hover:bg-destructive/20 hover:text-destructive" */}
-                                {/*   > */}
-                                {/*     <Trash2 className="w-4 h-4" /> */}
-                                {/*   </Button> */}
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleEditStart(
+                                      translationKey,
+                                      translationValue,
+                                    )
+                                  }
+                                  className="hover:bg-blue-500/20 hover:text-blue-600"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleRemoveKeyClick(lang, translationKey)
+                                  }
+                                  className="hover:bg-destructive/20 hover:text-destructive"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
                               </div>
                             </div>
                           </div>
@@ -256,6 +397,65 @@ export default function TranslationResultsPage() {
             ))}
           </Tabs>
         </div>
+
+        <ConflictResolver
+          conflicts={conflicts}
+          show={showConflictResolver}
+          closeResolver={() => setShowConflictResolver(false)}
+          handleResolveConflict={handleResolveConflict}
+        />
+
+        <Dialog open={!!keyToRemove} onOpenChange={() => setKeyToRemove(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-destructive" />
+                Remove Translation Key
+              </DialogTitle>
+              <DialogDescription className="space-y-2">
+                <div>
+                  You're about to remove the key{" "}
+                  <code className="bg-muted px-2 py-1 rounded text-sm">
+                    {keyToRemove?.key}
+                  </code>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  This key exists in{" "}
+                  <span className="font-medium">
+                    {keyToRemove ? getKeyLanguageCount(keyToRemove.key) : 0}
+                  </span>{" "}
+                  language(s). Choose your action:
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex-col sm:flex-col space-y-2">
+              <Button
+                variant="outline"
+                onClick={handleCancelRemove}
+                className="w-full"
+              >
+                <X className="w-4 h-4" />
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleRemoveCurrentLanguage}
+                className="w-full"
+              >
+                <Trash2 className="w-4 h-4" />
+                Remove from {keyToRemove?.language} only
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleRemoveAllLanguages}
+                className="w-full"
+              >
+                <Trash2 className="w-4 h-4" />
+                Remove from all languages
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
