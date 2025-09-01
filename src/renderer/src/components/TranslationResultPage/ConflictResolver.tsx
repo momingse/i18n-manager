@@ -328,7 +328,7 @@ export default function ConflictResolver({
                       {currentResolution?.action === "useCustom" && (
                         <input
                           placeholder="Enter custom translation..."
-                          value={currentResolution?.customValue ?? customValue}
+                          value={currentResolution?.customValue}
                           onChange={handleCustomValueChange}
                           className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-background transition-colors"
                         />
