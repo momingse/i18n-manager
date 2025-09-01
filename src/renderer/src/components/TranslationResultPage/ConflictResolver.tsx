@@ -54,33 +54,63 @@ export default function ConflictResolver({
   const [tempConflictResolutions, setTempConflictResolutions] = useState<
     ConflictResolution[]
   >([]);
-  const [customValue, setCustomValue] = useState("");
 
   const handleConflictResolution = (resolutionAction: ResolveAction) => {
+    const currentConflict = conflicts[currentConflictIndex];
+    const existingResolution = tempConflictResolutions.find(
+      (r) =>
+        r.key === currentConflict.key &&
+        r.language === currentConflict.language,
+    );
     const resolution: ConflictResolution =
       resolutionAction === "useCustom"
         ? {
-            key: conflicts[currentConflictIndex].key,
-            language: conflicts[currentConflictIndex].language,
+            key: currentConflict.key,
+            language: currentConflict.language,
             action: "useCustom",
-            customValue,
+            customValue:
+              existingResolution?.action === "useCustom"
+                ? existingResolution.customValue
+                : "",
           }
         : {
-            key: conflicts[currentConflictIndex].key,
-            language: conflicts[currentConflictIndex].language,
+            key: currentConflict.key,
+            language: currentConflict.language,
             action: resolutionAction,
           };
 
-    setTempConflictResolutions((prev) => [
-      ...prev.filter(
-        (r) => r.key !== resolution.key || r.language !== resolution.language,
-      ),
-      resolution,
-    ]);
+    setTempConflictResolutions((prev) => {
+      const index = prev.findIndex(
+        (r) =>
+          r.key === currentConflict.key &&
+          r.language === currentConflict.language,
+      );
+
+      if (index !== -1) {
+        return [...prev.slice(0, index), resolution, ...prev.slice(index + 1)];
+      }
+
+      return [...prev, resolution];
+    });
   };
 
   const handleCustomValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCustomValue(e.target.value);
+    const newCustomValue = e.target.value;
+    const currentConflict = conflicts[currentConflictIndex];
+    setTempConflictResolutions((prev) =>
+      prev.map((r) => {
+        if (
+          r.key === currentConflict.key &&
+          r.language === currentConflict.language
+        ) {
+          return {
+            ...r,
+            customValue: newCustomValue,
+          };
+        }
+        return r;
+      }),
+    );
   };
 
   const handleFinishConflictResolution = () => {
@@ -110,7 +140,6 @@ export default function ConflictResolver({
   );
 
   const allConflictsResolved =
-    currentConflictIndex === conflicts.length - 1 &&
     tempConflictResolutions.length === conflicts.length;
 
   return (

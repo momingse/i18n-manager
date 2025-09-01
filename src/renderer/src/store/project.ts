@@ -139,9 +139,16 @@ export const useProjectStore = create<ProjectStore>()(
         set((state) => {
           const currentProject = state.projects[state.currentProjectId ?? ""];
           if (!currentProject) return state;
+
+          const mergedData = { ...currentProject.data };
+          for (const lang in data) {
+            if (Object.prototype.hasOwnProperty.call(data, lang)) {
+              mergedData[lang] = { ...(mergedData[lang] || {}), ...data[lang] };
+            }
+          }
           const updatedCurrentProject: Project = {
             ...currentProject,
-            data,
+            data: mergedData,
           };
           return {
             projects: {
