@@ -1,4 +1,4 @@
-import { useProjectStore } from "@/store/project";
+import { currentProjectSelector, useProjectStore } from "@/store/project";
 import { ChevronDown, ChevronRight, Edit3, Globe, Save, X } from "lucide-react";
 import { useRef, useState } from "react";
 
@@ -8,8 +8,8 @@ const I18nConfigurePanel = () => {
   const [editMode, setEditMode] = useState(false);
   const i18nPathInputRef = useRef<HTMLInputElement>(null);
 
-  const { currentProjectId, projects, updateProject } = useProjectStore();
-  const currentProject = projects[currentProjectId ?? ""];
+  const { updateProject } = useProjectStore();
+  const currentProject = useProjectStore(currentProjectSelector);
 
   const handleI18nPathEdit = () => {
     setTempI18nPath(currentProject.i18nPath);

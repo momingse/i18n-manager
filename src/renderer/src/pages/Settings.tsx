@@ -3,7 +3,7 @@ import LanguageSupportManagementPanel from "@/components/SettingPage/LanguageSup
 import { LLMConfigurePanel } from "@/components/SettingPage/LLMConfigurePanel";
 import ProjectFolderConfigurePanel from "@/components/SettingPage/ProjectFolderConfigurePanel";
 import { ConfirmationDialog } from "@/components/SettingPage/RemoveProjectConfirmationDialog";
-import { useProjectStore } from "@/store/project";
+import { currentProjectSelector, useProjectStore } from "@/store/project";
 import { useSidebarStore } from "@/store/sidebar";
 import {
   AlertTriangle,
@@ -22,9 +22,8 @@ export const SettingsPage: React.FC = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { toggle } = useSidebarStore();
-  const { currentProjectId, projects, removeCurrentProject } =
-    useProjectStore();
-  const currentProject = projects[currentProjectId ?? ""];
+  const { removeCurrentProject } = useProjectStore();
+  const currentProject = useProjectStore(currentProjectSelector);
 
   if (!currentProject) return <></>;
 

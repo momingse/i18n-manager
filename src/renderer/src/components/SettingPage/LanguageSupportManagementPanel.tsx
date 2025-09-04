@@ -1,4 +1,4 @@
-import { useProjectStore } from "@/store/project";
+import { currentProjectSelector, useProjectStore } from "@/store/project";
 import { ChevronDown, ChevronRight, Globe, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -11,8 +11,8 @@ const LanguageSupportManagementPanel = () => {
     language: "",
   });
 
-  const { projects, currentProjectId, updateProject } = useProjectStore();
-  const currentProject = projects[currentProjectId ?? ""];
+  const { updateProject } = useProjectStore();
+  const currentProject = useProjectStore(currentProjectSelector);
 
   const handleAddLanguage = () => {
     if (!newLanguage.filename || !newLanguage.language) return;

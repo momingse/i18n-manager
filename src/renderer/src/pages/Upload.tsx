@@ -13,7 +13,7 @@ import translationWithLanguages from "@/lib/aiTransaction";
 import { matchesAnyPattern } from "@/lib/searchPattern";
 import { cn } from "@/lib/utils";
 import { useLLMStore } from "@/store/llm";
-import { useProjectStore } from "@/store/project";
+import { currentProjectSelector, useProjectStore } from "@/store/project";
 import { useSidebarStore } from "@/store/sidebar";
 import { useTranslationStore } from "@/store/translation";
 import {
@@ -45,8 +45,8 @@ export default function UploadPage() {
   const { toggle } = useSidebarStore();
   const { setTranslationResult } = useTranslationStore();
 
-  const { currentProjectId, projects, files } = useProjectStore();
-  const currentProject = projects[currentProjectId ?? ""];
+  const { files } = useProjectStore();
+  const currentProject = useProjectStore(currentProjectSelector);
 
   const naviagation = useNavigate();
 

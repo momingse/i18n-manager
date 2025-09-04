@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useProjectStore } from "@/store/project";
+import { currentProjectSelector, useProjectStore } from "@/store/project";
 import { useSidebarStore } from "@/store/sidebar";
 import { useTranslationStore } from "@/store/translation";
 import {
@@ -31,7 +31,7 @@ import {
   Menu,
   Save,
   Trash2,
-  X
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -63,8 +63,8 @@ export default function TranslationResultsPage() {
   const { toggle } = useSidebarStore();
   const { translationResult, updateTranslation, removeTranslationKey } =
     useTranslationStore();
-  const { currentProjectId, projects, updateData } = useProjectStore();
-  const currentProject = projects[currentProjectId ?? ""];
+  const { updateData } = useProjectStore();
+  const currentProject = useProjectStore(currentProjectSelector)
 
   const navigation = useNavigate();
 

@@ -46,11 +46,17 @@ type ProjectStoreActions = {
   updateProject: (project: Project) => void;
   removeCurrentProject: () => void;
   removeLanguage: (languageId: string) => void;
+  removeTranslationByKey: (key: string) => void;
+  updateTranslationKey: (oldKey: string, newKey: string) => void;
+  addTranslationKey: (key: string) => void;
+  updateTranslation: (language: string, key: string, value: string) => void;
   updateData: (data: Record<string, Record<string, string>>) => void;
   fetchProjectFiles: () => Promise<void>;
 };
 
 type ProjectStore = ProjectStoreState & ProjectStoreActions;
+
+type ProjectSelector<T> = (state: ProjectStore) => T;
 
 export const useProjectStore = create<ProjectStore>()(
   persist(
@@ -135,6 +141,108 @@ export const useProjectStore = create<ProjectStore>()(
         });
       },
 
+      removeTranslationByKey: (key) => {
+        set((state) => {
+          const currentProject = state.projects[state.currentProjectId ?? ""];
+          if (!currentProject) return state;
+
+          const updatedData = { ...currentProject.data };
+          for (const lang in updatedData) {
+            if (Object.prototype.hasOwnProperty.call(updatedData, lang)) {
+              delete updatedData[lang][key];
+            }
+          }
+
+          const updatedCurrentProject: Project = {
+            ...currentProject,
+            data: {
+              ...updatedData,
+            },
+          };
+          return {
+            projects: {
+              ...state.projects,
+              [updatedCurrentProject.id]: updatedCurrentProject,
+            },
+          };
+        });
+      },
+
+      updateTranslationKey: (oldKey, newKey) => {
+        set((state) => {
+          const currentProject = state.projects[state.currentProjectId ?? ""];
+          if (!currentProject) return state;
+
+          const updatedData = { ...currentProject.data };
+          for (const lang in updatedData) {
+            if (Object.prototype.hasOwnProperty.call(updatedData, lang)) {
+              updatedData[lang][newKey] = updatedData[lang][oldKey];
+              delete updatedData[lang][oldKey];
+            }
+          }
+
+          const updatedCurrentProject: Project = {
+            ...currentProject,
+            data: {
+              ...updatedData,
+            },
+          };
+          return {
+            projects: {
+              ...state.projects,
+              [updatedCurrentProject.id]: updatedCurrentProject,
+            },
+          };
+        });
+      },
+
+      addTranslationKey: (key) => {
+        set((state) => {
+          const currentProject = state.projects[state.currentProjectId ?? ""];
+          if (!currentProject) return state;
+
+          const updatedData = { ...currentProject.data };
+          for (const lang in updatedData) {
+            if (Object.prototype.hasOwnProperty.call(updatedData, lang)) {
+              updatedData[lang][key] = "";
+            }
+          }
+
+          const updatedCurrentProject: Project = {
+            ...currentProject,
+            data: {
+              ...updatedData,
+            },
+          };
+          return {
+            projects: {
+              ...state.projects,
+              [updatedCurrentProject.id]: updatedCurrentProject,
+            },
+          };
+        });
+      },
+
+      updateTranslation: (language, key, value) => {
+        set((state) => {
+          const currentProject = state.projects[state.currentProjectId ?? ""];
+          if (!currentProject) return state;
+
+          const updatedData = { ...currentProject.data };
+          updatedData[language][key] = value;
+          const updatedCurrentProject: Project = {
+            ...currentProject,
+            data: updatedData,
+          };
+          return {
+            projects: {
+              ...state.projects,
+              [updatedCurrentProject.id]: updatedCurrentProject,
+            },
+          };
+        });
+      },
+
       updateData: (data) => {
         set((state) => {
           const currentProject = state.projects[state.currentProjectId ?? ""];
@@ -190,3 +298,19 @@ export const useProjectStore = create<ProjectStore>()(
     },
   ),
 );
+
+export const currentProjectSelector: ProjectSelector<Project | null> = (
+  state,
+) =>
+  state.currentProjectId
+    ? (state.projects[state.currentProjectId] ?? null)
+    : null;
+
+export const currentProjectLanguageSelector: ProjectSelector<string[]> = (
+  state,
+) =>
+  state.currentProjectId
+    ? (state.projects[state.currentProjectId]?.fileLanguageMap.map(
+        (lang) => lang.language,
+      ) ?? [])
+    : [];

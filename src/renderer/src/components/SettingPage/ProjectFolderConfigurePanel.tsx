@@ -1,4 +1,4 @@
-import { useProjectStore } from "@/store/project";
+import { currentProjectSelector, useProjectStore } from "@/store/project";
 import {
   ChevronDown,
   ChevronRight,
@@ -16,8 +16,8 @@ const ProjectFolderConfigurePanel = () => {
   const [expanded, setExpanded] = useState(true);
   const projectPathInputRef = useRef<HTMLInputElement>(null);
 
-  const { projects, currentProjectId, updateProject } = useProjectStore();
-  const currentProject = projects[currentProjectId ?? ""];
+  const { updateProject } = useProjectStore();
+  const currentProject = useProjectStore(currentProjectSelector);
 
   const handleProjectPathEdit = () => {
     setTempProjectPath(currentProject.path);
