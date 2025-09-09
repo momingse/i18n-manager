@@ -36,6 +36,7 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useShallow } from "zustand/shallow";
 
 interface TranslationEntry {
   key: string;
@@ -64,7 +65,7 @@ export default function TranslationResultsPage() {
   const { translationResult, updateTranslation, removeTranslationKey } =
     useTranslationStore();
   const { updateData } = useProjectStore();
-  const currentProject = useProjectStore(currentProjectSelector)
+  const currentProject = useProjectStore(useShallow(currentProjectSelector));
 
   const navigation = useNavigate();
 
@@ -76,6 +77,10 @@ export default function TranslationResultsPage() {
 
     setSelectedLanguage(Object.keys(translationResult)[0]);
   }, [translationResult, navigation]);
+
+  if (!currentProject) {
+    return null;
+  }
 
   const handleEditStart = (key: string, value: string) => {
     setEditingKey(key);
@@ -213,10 +218,6 @@ export default function TranslationResultsPage() {
       (lang) => translationResult[lang][key],
     ).length;
   };
-
-  if (!currentProject) {
-    return null;
-  }
 
   if (!translationResult || Object.keys(translationResult).length === 0) {
     return null;

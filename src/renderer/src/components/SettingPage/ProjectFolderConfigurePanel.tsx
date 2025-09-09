@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { useShallow } from "zustand/shallow";
 
 const ProjectFolderConfigurePanel = () => {
   const [tempProjectPath, setTempProjectPath] = useState("");
@@ -17,7 +18,11 @@ const ProjectFolderConfigurePanel = () => {
   const projectPathInputRef = useRef<HTMLInputElement>(null);
 
   const { updateProject } = useProjectStore();
-  const currentProject = useProjectStore(currentProjectSelector);
+  const currentProject = useProjectStore(useShallow(currentProjectSelector));
+
+  if (!currentProject) {
+    return null;
+  }
 
   const handleProjectPathEdit = () => {
     setTempProjectPath(currentProject.path);
@@ -54,10 +59,6 @@ const ProjectFolderConfigurePanel = () => {
       handleProjectPathCancel();
     }
   };
-
-  if (!currentProject) {
-    return null;
-  }
 
   return (
     <div className="border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm shadow-xl rounded-lg">

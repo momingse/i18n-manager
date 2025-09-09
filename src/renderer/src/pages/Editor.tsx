@@ -22,6 +22,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
+  canRedoSelector,
+  canUndoSelector,
   currentProjectLanguageSelector,
   currentProjectSelector,
   useProjectStore,
@@ -37,10 +39,12 @@ import {
   Filter,
   Menu,
   Plus,
+  Redo,
   Search,
   Trash2,
+  Undo,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useShallow } from "zustand/shallow";
 
@@ -60,7 +64,6 @@ export default function EditorPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
-
   const [tempValue, setTempValue] = useState("");
 
   const {
@@ -68,9 +71,14 @@ export default function EditorPage() {
     updateTranslationKey,
     updateTranslation,
     addTranslationKey,
+    undoTranslation,
+    redoTranslation,
   } = useProjectStore();
+
   const languages = useProjectStore(useShallow(currentProjectLanguageSelector));
   const currentProject = useProjectStore(useShallow(currentProjectSelector));
+  const canRedo = useProjectStore(useShallow(canRedoSelector));
+  const canUndo = useProjectStore(useShallow(canUndoSelector));
 
   const translations = useMemo<Translation[]>(() => {
     if (!currentProject) return [];
@@ -115,6 +123,47 @@ export default function EditorPage() {
   const endIndex = startIndex + itemsPerPage;
   const currentTranslations = filteredTranslations.slice(startIndex, endIndex);
 
+  const handleUndo = useCallback(() => {
+    if (!canUndo) return;
+    undoTranslation();
+    toast.success("Undone", {
+      description: "Last action has been undone",
+      duration: 2000,
+    });
+  }, [canUndo, undoTranslation]);
+
+  const handleRedo = useCallback(() => {
+    if (!canRedo) return;
+    redoTranslation();
+    toast.success("Redone", {
+      description: "Action has been redone",
+      duration: 2000,
+    });
+  }, [canRedo, redoTranslation]);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Skip if user is editing a cell
+      if (editingCell) return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      }
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        (e.key === "y" || (e.key === "z" && e.shiftKey))
+      ) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [editingCell, handleRedo, handleUndo]);
+
   const saveTranslations = async () => {
     // TODO: save translations
     toast("Saved", { description: "Changes saved successfully" });
@@ -141,6 +190,7 @@ export default function EditorPage() {
     if (!translationKey) return;
 
     removeTranslationByKey(translationKey);
+    toast.success("Deleted", { description: "Translation key deleted" });
   };
 
   const handleSearching = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -191,6 +241,8 @@ export default function EditorPage() {
   const goToPreviousPage = () => goToPage(currentPage - 1);
   const goToNextPage = () => goToPage(currentPage + 1);
 
+  if (!currentProject) return null;
+
   return (
     <div className="h-full overflow-y-auto bg-gradient-to-br from-background via-background to-muted/10">
       <div className="container mx-auto px-6 py-6 max-w-full">
@@ -216,12 +268,83 @@ export default function EditorPage() {
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Undo/Redo Controls */}
+              <div className="hidden sm:flex items-center gap-1 mr-2 p-1 bg-card/30 rounded-lg border border-border/30">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleUndo}
+                  disabled={!canUndo}
+                  className={cn(
+                    "h-8 px-3 text-xs hover:bg-muted/50 transition-all duration-200",
+                    canUndo
+                      ? "text-foreground hover:text-primary"
+                      : "text-muted-foreground cursor-not-allowed",
+                  )}
+                  title="Undo (Ctrl+Z)"
+                >
+                  <Undo className="w-4 h-4 mr-1" />
+                  Undo
+                </Button>
+                <div className="w-px h-4 bg-border/50" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRedo}
+                  disabled={!canRedo}
+                  className={cn(
+                    "h-8 px-3 text-xs hover:bg-muted/50 transition-all duration-200",
+                    canRedo
+                      ? "text-foreground hover:text-primary"
+                      : "text-muted-foreground cursor-not-allowed",
+                  )}
+                  title="Redo (Ctrl+Y)"
+                >
+                  <Redo className="w-4 h-4 mr-1" />
+                  Redo
+                </Button>
+              </div>
+
+              {/* Mobile Undo/Redo */}
+              <div className="sm:hidden flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleUndo}
+                  disabled={!canUndo}
+                  className={cn(
+                    "h-9 w-9 p-0",
+                    canUndo
+                      ? "hover:bg-muted hover:text-primary"
+                      : "text-muted-foreground cursor-not-allowed",
+                  )}
+                  title="Undo"
+                >
+                  <Undo className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRedo}
+                  disabled={!canRedo}
+                  className={cn(
+                    "h-9 w-9 p-0",
+                    canRedo
+                      ? "hover:bg-muted hover:text-primary"
+                      : "text-muted-foreground cursor-not-allowed",
+                  )}
+                  title="Redo"
+                >
+                  <Redo className="w-4 h-4" />
+                </Button>
+              </div>
+
               <Button
                 onClick={saveTranslations}
                 className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Export
+                <span className="hidden sm:inline">Export</span>
               </Button>
             </div>
           </div>
@@ -281,6 +404,53 @@ export default function EditorPage() {
               <span className="text-xs">per page</span>
             </div>
           </div>
+
+          {/* History Status Bar */}
+          {(canUndo || canRedo) && (
+            <div className="mt-4 px-4 py-2 bg-muted/20 rounded-lg border border-border/20">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center gap-4">
+                  <span>History Status:</span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "flex items-center gap-1",
+                        canUndo ? "text-foreground" : "",
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "w-1.5 h-1.5 rounded-full",
+                          canUndo ? "bg-green-500" : "bg-muted-foreground/30",
+                        )}
+                      />
+                      {currentProject?.undoableStack.undoStack.length || 0}{" "}
+                      actions available to undo
+                    </span>
+                    <span className="text-muted-foreground/50">•</span>
+                    <span
+                      className={cn(
+                        "flex items-center gap-1",
+                        canRedo ? "text-foreground" : "",
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "w-1.5 h-1.5 rounded-full",
+                          canRedo ? "bg-blue-500" : "bg-muted-foreground/30",
+                        )}
+                      />
+                      {currentProject?.undoableStack.redoStack.length || 0}{" "}
+                      actions available to redo
+                    </span>
+                  </div>
+                </div>
+                <div className="hidden sm:block text-muted-foreground/70">
+                  Use Ctrl+Z to undo, Ctrl+Y to redo
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -426,23 +596,6 @@ export default function EditorPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          {/* <Button */}
-                          {/*   variant="ghost" */}
-                          {/*   size="sm" */}
-                          {/*   className="h-8 w-8 p-0 text-muted-foreground hover:text-primary hover:bg-primary/20 transition-all duration-200" */}
-                          {/*   title="Edit" */}
-                          {/* > */}
-                          {/*   <Wand2 className="w-3 h-3" /> */}
-                          {/* </Button> */}
-                          {/* <Button */}
-                          {/*   variant="ghost" */}
-                          {/*   size="sm" */}
-                          {/*   onClick={() => duplicateTranslation(translation.id)} */}
-                          {/*   className="h-8 w-8 p-0 text-muted-foreground hover:text-primary hover:bg-primary/20 transition-all duration-200" */}
-                          {/*   title="Duplicate" */}
-                          {/* > */}
-                          {/*   <Copy className="w-3 h-3" /> */}
-                          {/* </Button> */}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -469,9 +622,7 @@ export default function EditorPage() {
                               value={tempValue}
                               onChange={(e) => setTempValue(e.target.value)}
                               onBlur={handleCellBlur}
-                              onKeyDown={(e) =>
-                                handleKeyDown(e)
-                              }
+                              onKeyDown={(e) => handleKeyDown(e)}
                               className="font-mono text-sm bg-inherit border-2 border-primary/50 focus:border-primary"
                               autoFocus
                             />
@@ -499,9 +650,7 @@ export default function EditorPage() {
                                   value={tempValue}
                                   onChange={(e) => setTempValue(e.target.value)}
                                   onBlur={handleCellBlur}
-                                  onKeyDown={(e) =>
-                                    handleKeyDown(e)
-                                  }
+                                  onKeyDown={(e) => handleKeyDown(e)}
                                   placeholder={`${lang} translation...`}
                                   rows={2}
                                   className="resize-none bg-white border-2 border-primary/50 focus:border-primary text-sm"
@@ -523,29 +672,6 @@ export default function EditorPage() {
                                 </div>
                               )}
                             </div>
-                            {/* {translation.en && ( */}
-                            {/*   <Button */}
-                            {/*     variant="ghost" */}
-                            {/*     size="sm" */}
-                            {/*     disabled={ */}
-                            {/*       generatingFor === `${translation.id}-${lang}` */}
-                            {/*     } */}
-                            {/*     className={cn( */}
-                            {/*       "shrink-0 h-8 w-8 p-0 hover:bg-primary/20 hover:text-primary transition-all duration-200 opacity-0 group-hover:opacity-100", */}
-                            {/*       generatingFor === */}
-                            {/*         `${translation.id}-${lang}` && */}
-                            {/*         "bg-primary/10 opacity-100", */}
-                            {/*     )} */}
-                            {/*     title={`Generate ${lang.toUpperCase()} translation`} */}
-                            {/*   > */}
-                            {/*     {generatingFor === */}
-                            {/*     `${translation.id}-${lang}` ? ( */}
-                            {/*       <div className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" /> */}
-                            {/*     ) : ( */}
-                            {/*       <Wand2 className="w-3 h-3" /> */}
-                            {/*     )} */}
-                            {/*   </Button> */}
-                            {/* )} */}
                           </div>
                         </TableCell>
                       ))}

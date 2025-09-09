@@ -1,6 +1,8 @@
+import { deepClone } from "@/lib/deepClone";
 import { jsonStorage } from "@/lib/electronStore";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import createDeepMerge from "@fastify/deepmerge";
 
 export type i18nLanguage = {
   id: string;
@@ -16,6 +18,11 @@ export type ProjectFile = {
   modified?: Date;
 };
 
+type UndoableStack<T> = {
+  redoStack: T[];
+  undoStack: T[];
+};
+
 export type Project = {
   id: string;
   name: string;
@@ -26,12 +33,13 @@ export type Project = {
   updatedAt: Date;
   translationCount: number;
   data: Record<string, Record<string, string>>;
+  undoableStack: UndoableStack<Record<string, Record<string, string>>>;
 };
 
 type ProjectStoreState = {
-  currentProjectId: string | null;
+  currentProjectId?: string;
   projects: Record<string, Project>;
-  files: ProjectFile[];
+  currentProjectFiles: ProjectFile[];
 };
 
 type ProjectStoreActions = {
@@ -50,6 +58,8 @@ type ProjectStoreActions = {
   updateTranslationKey: (oldKey: string, newKey: string) => void;
   addTranslationKey: (key: string) => void;
   updateTranslation: (language: string, key: string, value: string) => void;
+  undoTranslation: () => void;
+  redoTranslation: () => void;
   updateData: (data: Record<string, Record<string, string>>) => void;
   fetchProjectFiles: () => Promise<void>;
 };
@@ -58,12 +68,13 @@ type ProjectStore = ProjectStoreState & ProjectStoreActions;
 
 type ProjectSelector<T> = (state: ProjectStore) => T;
 
+const deepMerge = createDeepMerge({ all: true });
+
 export const useProjectStore = create<ProjectStore>()(
   persist(
     (set, get) => ({
-      currentProjectId: null,
       projects: {},
-      files: [],
+      currentProjectFiles: [],
 
       createProject: (projectName, path, i18nPath, fileLanguageMap, data) => {
         const newProject: Project = {
@@ -76,6 +87,10 @@ export const useProjectStore = create<ProjectStore>()(
           updatedAt: new Date(),
           translationCount: 0,
           data: data || {},
+          undoableStack: {
+            redoStack: [],
+            undoStack: [],
+          },
         };
         set((state) => ({
           ...state,
@@ -89,7 +104,7 @@ export const useProjectStore = create<ProjectStore>()(
 
       switchProject: (projectId) => {
         set((state) => ({
-          currentProjectId: state.projects[projectId] ? projectId : null,
+          currentProjectId: state.projects[projectId] ? projectId : undefined,
         }));
       },
 
@@ -116,7 +131,7 @@ export const useProjectStore = create<ProjectStore>()(
 
           // check if there is another project, if yes, set it as current
           return {
-            currentProjectId: Object.keys(updatedProjects)[0] || null,
+            currentProjectId: Object.keys(updatedProjects)[0] || undefined,
             projects: updatedProjects,
           };
         });
@@ -126,12 +141,34 @@ export const useProjectStore = create<ProjectStore>()(
         set((state) => {
           const currentProject = state.projects[state.currentProjectId ?? ""];
           if (!currentProject) return state;
+
+          const language = currentProject.fileLanguageMap.find(
+            (lang) => lang.id === languageId,
+          )?.language;
+          if (!language) return state;
+
+          // snapshot previous data
+          const prevSnapshot = deepClone(currentProject.data);
+
+          // remove language from data (operate on a deep clone)
+          const updatedData = deepClone(currentProject.data);
+          delete updatedData[language];
+
           const updatedCurrentProject: Project = {
             ...currentProject,
             fileLanguageMap: currentProject.fileLanguageMap.filter(
               (lang) => lang.id !== languageId,
             ),
+            data: updatedData,
+            undoableStack: {
+              undoStack: [
+                ...currentProject.undoableStack.undoStack,
+                prevSnapshot,
+              ],
+              redoStack: [],
+            },
           };
+
           return {
             projects: {
               ...state.projects,
@@ -146,7 +183,9 @@ export const useProjectStore = create<ProjectStore>()(
           const currentProject = state.projects[state.currentProjectId ?? ""];
           if (!currentProject) return state;
 
-          const updatedData = { ...currentProject.data };
+          const prevSnapshot = deepClone(currentProject.data);
+          const updatedData = deepClone(currentProject.data);
+
           for (const lang in updatedData) {
             if (Object.prototype.hasOwnProperty.call(updatedData, lang)) {
               delete updatedData[lang][key];
@@ -155,10 +194,16 @@ export const useProjectStore = create<ProjectStore>()(
 
           const updatedCurrentProject: Project = {
             ...currentProject,
-            data: {
-              ...updatedData,
+            data: updatedData,
+            undoableStack: {
+              undoStack: [
+                ...currentProject.undoableStack.undoStack,
+                prevSnapshot,
+              ],
+              redoStack: [],
             },
           };
+
           return {
             projects: {
               ...state.projects,
@@ -173,20 +218,33 @@ export const useProjectStore = create<ProjectStore>()(
           const currentProject = state.projects[state.currentProjectId ?? ""];
           if (!currentProject) return state;
 
-          const updatedData = { ...currentProject.data };
+          const prevSnapshot = deepClone(currentProject.data);
+          const updatedData = deepClone(currentProject.data);
+
           for (const lang in updatedData) {
             if (Object.prototype.hasOwnProperty.call(updatedData, lang)) {
-              updatedData[lang][newKey] = updatedData[lang][oldKey];
-              delete updatedData[lang][oldKey];
+              // guard if oldKey doesn't exist
+              if (
+                Object.prototype.hasOwnProperty.call(updatedData[lang], oldKey)
+              ) {
+                updatedData[lang][newKey] = updatedData[lang][oldKey];
+                delete updatedData[lang][oldKey];
+              }
             }
           }
 
           const updatedCurrentProject: Project = {
             ...currentProject,
-            data: {
-              ...updatedData,
+            data: updatedData,
+            undoableStack: {
+              undoStack: [
+                ...currentProject.undoableStack.undoStack,
+                prevSnapshot,
+              ],
+              redoStack: [],
             },
           };
+
           return {
             projects: {
               ...state.projects,
@@ -201,19 +259,29 @@ export const useProjectStore = create<ProjectStore>()(
           const currentProject = state.projects[state.currentProjectId ?? ""];
           if (!currentProject) return state;
 
-          const updatedData = { ...currentProject.data };
+          const prevSnapshot = deepClone(currentProject.data);
+          const updatedData = deepClone(currentProject.data);
+
           for (const lang in updatedData) {
             if (Object.prototype.hasOwnProperty.call(updatedData, lang)) {
+              // ensure language object exists
+              updatedData[lang] = updatedData[lang] || {};
               updatedData[lang][key] = "";
             }
           }
 
           const updatedCurrentProject: Project = {
             ...currentProject,
-            data: {
-              ...updatedData,
+            data: updatedData,
+            undoableStack: {
+              undoStack: [
+                ...currentProject.undoableStack.undoStack,
+                prevSnapshot,
+              ],
+              redoStack: [],
             },
           };
+
           return {
             projects: {
               ...state.projects,
@@ -228,12 +296,84 @@ export const useProjectStore = create<ProjectStore>()(
           const currentProject = state.projects[state.currentProjectId ?? ""];
           if (!currentProject) return state;
 
-          const updatedData = { ...currentProject.data };
+          const prevSnapshot = deepClone(currentProject.data);
+          const updatedData = deepClone(currentProject.data);
+
+          // ensure language map exists
+          updatedData[language] = updatedData[language] || {};
           updatedData[language][key] = value;
+
           const updatedCurrentProject: Project = {
             ...currentProject,
             data: updatedData,
+            undoableStack: {
+              undoStack: [
+                ...currentProject.undoableStack.undoStack,
+                prevSnapshot,
+              ],
+              redoStack: [],
+            },
           };
+
+          return {
+            projects: {
+              ...state.projects,
+              [updatedCurrentProject.id]: updatedCurrentProject,
+            },
+          };
+        });
+      },
+
+      undoTranslation: () => {
+        set((state) => {
+          const currentProject = state.projects[state.currentProjectId ?? ""];
+          if (!currentProject) return state;
+
+          const newUndoStack = [...currentProject.undoableStack.undoStack];
+          const previousData = newUndoStack.pop();
+          if (!previousData) return state;
+
+          const updatedCurrentProject: Project = {
+            ...currentProject,
+            data: previousData,
+            undoableStack: {
+              undoStack: newUndoStack,
+              redoStack: [
+                ...currentProject.undoableStack.redoStack,
+                deepClone(currentProject.data), // snapshot current for redo
+              ],
+            },
+          };
+          return {
+            projects: {
+              ...state.projects,
+              [updatedCurrentProject.id]: updatedCurrentProject,
+            },
+          };
+        });
+      },
+
+      redoTranslation: () => {
+        set((state) => {
+          const currentProject = state.projects[state.currentProjectId ?? ""];
+          if (!currentProject) return state;
+
+          const newRedoStack = [...currentProject.undoableStack.redoStack];
+          const nextData = newRedoStack.pop();
+          if (!nextData) return state;
+
+          const updatedCurrentProject: Project = {
+            ...currentProject,
+            data: nextData,
+            undoableStack: {
+              undoStack: [
+                ...currentProject.undoableStack.undoStack,
+                deepClone(currentProject.data), // snapshot current for undo
+              ],
+              redoStack: newRedoStack,
+            },
+          };
+
           return {
             projects: {
               ...state.projects,
@@ -270,17 +410,17 @@ export const useProjectStore = create<ProjectStore>()(
       fetchProjectFiles: async () => {
         const currentProject = get().projects[get().currentProjectId ?? ""];
         if (!currentProject) {
-          set({ files: [] });
+          set({ currentProjectFiles: [] });
           return;
         }
         try {
           const files = await window.electronAPI.readFiles.readProjectFiles(
             currentProject.path,
           );
-          set({ files });
+          set({ currentProjectFiles: files });
         } catch (error) {
           console.error("Failed to fetch project files:", error);
-          set({ files: [] });
+          set({ currentProjectFiles: [] });
         }
       },
     }),
@@ -295,16 +435,29 @@ export const useProjectStore = create<ProjectStore>()(
         if (!state || !state.currentProjectId || !state.projects) return;
         await state.fetchProjectFiles();
       },
+      merge: (persisted, current) => {
+        const merged = deepMerge(current, persisted) as ProjectStore;
+
+        // ensure top-level shape
+        merged.currentProjectId = merged.currentProjectId ?? undefined;
+
+        // migrate each saved project
+        const migratedProjects: Record<string, Project> = {};
+        for (const id of Object.keys(merged.projects || {})) {
+          migratedProjects[id] = migrateProject(merged.projects[id]);
+        }
+        merged.projects = migratedProjects;
+
+        return merged;
+      },
     },
   ),
 );
 
-export const currentProjectSelector: ProjectSelector<Project | null> = (
+export const currentProjectSelector: ProjectSelector<Project | undefined> = (
   state,
 ) =>
-  state.currentProjectId
-    ? (state.projects[state.currentProjectId] ?? null)
-    : null;
+  state.currentProjectId ? state.projects[state.currentProjectId] : undefined;
 
 export const currentProjectLanguageSelector: ProjectSelector<string[]> = (
   state,
@@ -314,3 +467,31 @@ export const currentProjectLanguageSelector: ProjectSelector<string[]> = (
         (lang) => lang.language,
       ) ?? [])
     : [];
+
+export const canRedoSelector: ProjectSelector<boolean> = (state) =>
+  state.currentProjectId
+    ? state.projects[state.currentProjectId]?.undoableStack.redoStack.length > 0
+    : false;
+
+export const canUndoSelector: ProjectSelector<boolean> = (state) =>
+  state.currentProjectId
+    ? state.projects[state.currentProjectId]?.undoableStack.undoStack.length > 0
+    : false;
+
+const migrateProject = (p: Partial<Project> | Project): Project => {
+  return {
+    id: p.id ?? crypto.randomUUID(),
+    name: p.name ?? "Untitled",
+    path: p.path ?? "",
+    i18nPath: p.i18nPath ?? "",
+    fileLanguageMap: p.fileLanguageMap ?? [],
+    createdAt: p.createdAt ? new Date(p.createdAt) : new Date(),
+    updatedAt: p.updatedAt ? new Date(p.updatedAt) : new Date(),
+    translationCount: p.translationCount ?? 0,
+    data: p.data ?? {},
+    undoableStack: {
+      undoStack: p.undoableStack?.undoStack ?? [],
+      redoStack: p.undoableStack?.redoStack ?? [],
+    },
+  } satisfies Project;
+};

@@ -32,6 +32,7 @@ import type React from "react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useShallow } from "zustand/shallow";
 
 export default function UploadPage() {
   const [searchPattern, setSearchPattern] = useState("");
@@ -45,8 +46,8 @@ export default function UploadPage() {
   const { toggle } = useSidebarStore();
   const { setTranslationResult } = useTranslationStore();
 
-  const { files } = useProjectStore();
-  const currentProject = useProjectStore(currentProjectSelector);
+  const { currentProjectFiles } = useProjectStore();
+  const currentProject = useProjectStore(useShallow(currentProjectSelector));
 
   const naviagation = useNavigate();
 
@@ -73,13 +74,13 @@ export default function UploadPage() {
       .filter((p) => p.startsWith("!"))
       .map((p) => p.slice(1));
 
-    let results = files;
+    let results = currentProjectFiles;
 
     // TODO: exclude .gitignore files
 
     // Apply inclusion filters (if any)
     if (inclusionPatterns.length > 0) {
-      results = files.filter((file) =>
+      results = currentProjectFiles.filter((file) =>
         matchesAnyPattern(file, inclusionPatterns),
       );
     }
@@ -119,7 +120,11 @@ export default function UploadPage() {
     });
 
     return results.slice(0, 10); // Limit to 10 results
-  }, [files, searchPattern]);
+  }, [currentProjectFiles, searchPattern]);
+
+  if (!currentProject) {
+    return null;
+  }
 
   const handlePatternChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchPattern(e.target.value);
@@ -165,7 +170,7 @@ export default function UploadPage() {
       return;
     }
 
-    const languages = currentProject.fileLanguageMap.map(
+    const languages = currentProject?.fileLanguageMap.map(
       (lang) => lang.language,
     );
 
@@ -357,7 +362,9 @@ export default function UploadPage() {
 
                   <div className="space-y-2 max-h-60 overflow-y-auto">
                     {selectedFiles.map((filePath, index) => {
-                      const file = files.find((f) => f.path === filePath);
+                      const file = currentProjectFiles.find(
+                        (f) => f.path === filePath,
+                      );
                       return (
                         <div
                           key={filePath}

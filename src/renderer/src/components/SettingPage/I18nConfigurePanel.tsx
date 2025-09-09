@@ -1,6 +1,7 @@
 import { currentProjectSelector, useProjectStore } from "@/store/project";
 import { ChevronDown, ChevronRight, Edit3, Globe, Save, X } from "lucide-react";
 import { useRef, useState } from "react";
+import { useShallow } from "zustand/shallow";
 
 const I18nConfigurePanel = () => {
   const [tempI18nPath, setTempI18nPath] = useState("");
@@ -9,7 +10,11 @@ const I18nConfigurePanel = () => {
   const i18nPathInputRef = useRef<HTMLInputElement>(null);
 
   const { updateProject } = useProjectStore();
-  const currentProject = useProjectStore(currentProjectSelector);
+  const currentProject = useProjectStore(useShallow(currentProjectSelector));
+
+  if (!currentProject) {
+    return null;
+  }
 
   const handleI18nPathEdit = () => {
     setTempI18nPath(currentProject.i18nPath);
@@ -36,11 +41,6 @@ const I18nConfigurePanel = () => {
       handleI18nPathCancel();
     }
   };
-
-  if (!currentProject) {
-    return null;
-  }
-
   return (
     <div className="border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm shadow-xl rounded-lg">
       <div
