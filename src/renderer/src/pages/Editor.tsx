@@ -47,6 +47,7 @@ import {
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useShallow } from "zustand/shallow";
+import { useMac } from "@/hooks/useDevice";
 
 export interface Translation {
   key: string;
@@ -65,6 +66,8 @@ export default function EditorPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
   const [tempValue, setTempValue] = useState("");
+
+  const isMac = useMac();
 
   const {
     removeTranslationByKey,
@@ -141,19 +144,24 @@ export default function EditorPage() {
     });
   }, [canRedo, redoTranslation]);
 
-  // Keyboard shortcuts for undo/redo
+  // Keyboard shortcuts for undo/redo with proper Mac/Windows support
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Skip if user is editing a cell
       if (editingCell) return;
 
-      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+      const modifierKey = isMac ? e.metaKey : e.ctrlKey;
+
+      // Undo: Ctrl+Z (Windows) or Cmd+Z (Mac)
+      if (modifierKey && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
         handleUndo();
       }
+
+      // Redo: Ctrl+Y (Windows) or Cmd+Shift+Z (Mac) or Ctrl+Shift+Z (both)
       if (
-        (e.ctrlKey || e.metaKey) &&
-        (e.key === "y" || (e.key === "z" && e.shiftKey))
+        modifierKey &&
+        ((e.key === "y" && !isMac) || (e.key === "z" && e.shiftKey))
       ) {
         e.preventDefault();
         handleRedo();
@@ -162,7 +170,7 @@ export default function EditorPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [editingCell, handleRedo, handleUndo]);
+  }, [editingCell, handleRedo, handleUndo, isMac]);
 
   const saveTranslations = async () => {
     // TODO: save translations
@@ -241,6 +249,15 @@ export default function EditorPage() {
   const goToPreviousPage = () => goToPage(currentPage - 1);
   const goToNextPage = () => goToPage(currentPage + 1);
 
+  // Get shortcut text based on platform
+  const getShortcutText = (action: "undo" | "redo") => {
+    if (action === "undo") {
+      return isMac ? "⌘Z" : "Ctrl+Z";
+    } else {
+      return isMac ? "⌘⇧Z" : "Ctrl+Y";
+    }
+  };
+
   if (!currentProject) return null;
 
   return (
@@ -281,7 +298,7 @@ export default function EditorPage() {
                       ? "text-foreground hover:text-primary"
                       : "text-muted-foreground cursor-not-allowed",
                   )}
-                  title="Undo (Ctrl+Z)"
+                  title={`Undo (${getShortcutText("undo")})`}
                 >
                   <Undo className="w-4 h-4 mr-1" />
                   Undo
@@ -298,7 +315,7 @@ export default function EditorPage() {
                       ? "text-foreground hover:text-primary"
                       : "text-muted-foreground cursor-not-allowed",
                   )}
-                  title="Redo (Ctrl+Y)"
+                  title={`Redo (${getShortcutText("redo")})`}
                 >
                   <Redo className="w-4 h-4 mr-1" />
                   Redo
@@ -318,7 +335,7 @@ export default function EditorPage() {
                       ? "hover:bg-muted hover:text-primary"
                       : "text-muted-foreground cursor-not-allowed",
                   )}
-                  title="Undo"
+                  title={`Undo (${getShortcutText("undo")})`}
                 >
                   <Undo className="w-4 h-4" />
                 </Button>
@@ -333,7 +350,7 @@ export default function EditorPage() {
                       ? "hover:bg-muted hover:text-primary"
                       : "text-muted-foreground cursor-not-allowed",
                   )}
-                  title="Redo"
+                  title={`Redo (${getShortcutText("redo")})`}
                 >
                   <Redo className="w-4 h-4" />
                 </Button>
@@ -446,7 +463,8 @@ export default function EditorPage() {
                   </div>
                 </div>
                 <div className="hidden sm:block text-muted-foreground/70">
-                  Use Ctrl+Z to undo, Ctrl+Y to redo
+                  Use {getShortcutText("undo")} to undo,{" "}
+                  {getShortcutText("redo")} to redo
                 </div>
               </div>
             </div>
