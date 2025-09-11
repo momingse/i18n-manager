@@ -224,8 +224,6 @@ export default function EditorPage() {
   };
 
   const handleCellBlur = () => {
-    setEditingCell(null);
-
     if (!editingCell) return;
 
     if (editingCell?.lang) {
@@ -233,6 +231,7 @@ export default function EditorPage() {
     } else {
       handleUpdateTranslationKey(editingCell.key, tempValue);
     }
+    setEditingCell(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -240,12 +239,12 @@ export default function EditorPage() {
 
     if ((e.key === "Enter" && !e.shiftKey) || e.key === "Tab") {
       e.preventDefault();
-      setEditingCell(null);
       if (editingCell?.lang) {
         updateTranslation(editingCell.lang, editingCell.key, tempValue);
       } else {
         handleUpdateTranslationKey(editingCell.key, tempValue);
       }
+      setEditingCell(null);
     }
   };
 
