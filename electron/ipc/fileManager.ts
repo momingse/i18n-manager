@@ -1,6 +1,7 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 import { handleIPC, FileManagerIPCChannel } from ".";
+import ignore from "ignore";
 
 export type ProjectFile = {
   name: string;
@@ -10,8 +11,21 @@ export type ProjectFile = {
   modified?: Date;
 };
 
+let ig: ReturnType<typeof ignore> | null = null;
+
+const loadGitIgnore = async (projectPath: string) => {
+  try {
+    const gitIgnorePath = path.join(projectPath, ".gitignore");
+    const content = await fs.readFile(gitIgnorePath, "utf-8");
+    ig = ignore().add(content.split("\n"));
+  } catch {
+    ig = null; // no .gitignore
+  }
+};
+
 const readDirectoryRecursive = async (
   dirPath: string,
+  rootPath: string,
 ): Promise<ProjectFile[]> => {
   const files: ProjectFile[] = [];
 
@@ -20,6 +34,11 @@ const readDirectoryRecursive = async (
 
     for (const entry of entries) {
       const fullPath = path.join(dirPath, entry.name);
+      const relativePath = path.relative(rootPath, fullPath);
+
+      // Skip ignored files
+      if (ig && ig.ignores(relativePath)) continue;
+
       const isDirectory = entry.isDirectory();
       let projectFile: ProjectFile;
 
@@ -43,7 +62,7 @@ const readDirectoryRecursive = async (
 
       if (isDirectory) {
         try {
-          const subFiles = await readDirectoryRecursive(fullPath);
+          const subFiles = await readDirectoryRecursive(fullPath, rootPath);
           files.push(...subFiles);
         } catch (subDirError) {
           console.warn(`Could not read subdirectory ${fullPath}:`, subDirError);
@@ -64,13 +83,13 @@ export const setupFileManagerIPCHandler = () => {
     FileManagerIPCChannel.readProjectFiles,
     async (event, projectPath) => {
       try {
-        // Check if the project path exists
         await fs.access(projectPath);
 
-        // Read all files recursively
-        const files = await readDirectoryRecursive(projectPath);
+        // Load .gitignore before reading
+        await loadGitIgnore(projectPath);
 
-        // Sort files: directories first, then alphabetically by name
+        const files = await readDirectoryRecursive(projectPath, projectPath);
+
         files.sort((a, b) => {
           if (a.isDirectory && !b.isDirectory) return -1;
           if (!a.isDirectory && b.isDirectory) return 1;
@@ -83,9 +102,6 @@ export const setupFileManagerIPCHandler = () => {
           `Failed to read project files from ${projectPath}:`,
           error,
         );
-
-        // Return empty array on error rather than throwing
-        // This matches the error handling in your Zustand store
         return [];
       }
     },

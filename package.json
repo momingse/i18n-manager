@@ -28,6 +28,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "eslint-plugin-react": "^7.37.5",
+    "ignore": "^7.0.5",
     "keytar": "^7.9.0",
     "lowdb": "^7.0.1",
     "lucide-react": "^0.539.0",
