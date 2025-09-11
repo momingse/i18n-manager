@@ -119,7 +119,7 @@ export default function UploadPage() {
       return aName.localeCompare(bName);
     });
 
-    return results.slice(0, 10); // Limit to 10 results
+    return results;
   }, [currentProjectFiles, searchPattern]);
 
   if (!currentProject) {
