@@ -214,6 +214,15 @@ export default function EditorPage() {
     setEditingCell({ key, lang });
   };
 
+  const handleUpdateTranslationKey = (key: string, value: string) => {
+    if (translations.some((t) => t.key === value) && key !== value) {
+      toast("Error", { description: "Key already exists" });
+      return;
+    }
+    updateTranslationKey(key, value);
+    toast.success("Updated", { description: "Translation key updated" });
+  };
+
   const handleCellBlur = () => {
     setEditingCell(null);
 
@@ -222,7 +231,7 @@ export default function EditorPage() {
     if (editingCell?.lang) {
       updateTranslation(editingCell.lang, editingCell.key, tempValue);
     } else {
-      updateTranslationKey(editingCell.key, tempValue);
+      handleUpdateTranslationKey(editingCell.key, tempValue);
     }
   };
 
@@ -235,7 +244,7 @@ export default function EditorPage() {
       if (editingCell?.lang) {
         updateTranslation(editingCell.lang, editingCell.key, tempValue);
       } else {
-        updateTranslationKey(editingCell.key, tempValue);
+        handleUpdateTranslationKey(editingCell.key, tempValue);
       }
     }
   };

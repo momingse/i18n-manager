@@ -235,6 +235,8 @@ export const useProjectStore = create<ProjectStore>()(
             const currentProject = state.projects[state.currentProjectId ?? ""];
             if (!currentProject) return state;
 
+            if (oldKey === newKey) return state;
+
             const prevSnapshot = deepClone(currentProject.data);
             const updatedData = deepClone(currentProject.data);
 
