@@ -7,8 +7,8 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Globe, Rocket } from "lucide-react";
-import { LanguageManager } from "../components/LanguageManager";
-import { PathInput } from "../components/PathInput";
+import { LanguageManager } from "./LanguageManager";
+import { PathInput } from "./PathInput";
 import { i18nLanguage } from "@/store/project";
 
 interface I18nConfigStepProps {

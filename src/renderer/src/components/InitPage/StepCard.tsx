@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
-import { FolderUploadStep } from "./steps/FolderUploadStep";
-import { I18nConfigStep } from "./steps/I18nConfigStep";
-import { ProjectNameStep } from "./steps/ProjectNameStep";
+import { FolderUploadStep } from "./FolderUploadStep";
+import { I18nConfigStep } from "./I18nConfigStep";
+import { ProjectNameStep } from "./ProjectNameStep";
 import { ProjectData } from "@/pages/Init";
 import { i18nLanguage } from "@/store/project";
 

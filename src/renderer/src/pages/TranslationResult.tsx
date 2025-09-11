@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useProjectStore } from "@/store/project";
+import { currentProjectSelector, useProjectStore } from "@/store/project";
 import { useSidebarStore } from "@/store/sidebar";
 import { useTranslationStore } from "@/store/translation";
 import {
@@ -31,11 +31,12 @@ import {
   Menu,
   Save,
   Trash2,
-  X
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useShallow } from "zustand/shallow";
 
 interface TranslationEntry {
   key: string;
@@ -63,8 +64,8 @@ export default function TranslationResultsPage() {
   const { toggle } = useSidebarStore();
   const { translationResult, updateTranslation, removeTranslationKey } =
     useTranslationStore();
-  const { currentProjectId, projects, updateData } = useProjectStore();
-  const currentProject = projects[currentProjectId ?? ""];
+  const { updateData } = useProjectStore();
+  const currentProject = useProjectStore(useShallow(currentProjectSelector));
 
   const navigation = useNavigate();
 
@@ -76,6 +77,10 @@ export default function TranslationResultsPage() {
 
     setSelectedLanguage(Object.keys(translationResult)[0]);
   }, [translationResult, navigation]);
+
+  if (!currentProject) {
+    return null;
+  }
 
   const handleEditStart = (key: string, value: string) => {
     setEditingKey(key);
@@ -213,10 +218,6 @@ export default function TranslationResultsPage() {
       (lang) => translationResult[lang][key],
     ).length;
   };
-
-  if (!currentProject) {
-    return null;
-  }
 
   if (!translationResult || Object.keys(translationResult).length === 0) {
     return null;

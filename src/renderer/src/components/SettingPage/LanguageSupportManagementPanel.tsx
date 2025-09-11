@@ -1,7 +1,19 @@
-import { useProjectStore } from "@/store/project";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { currentProjectSelector, useProjectStore } from "@/store/project";
 import { ChevronDown, ChevronRight, Globe, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useShallow } from "zustand/shallow";
 
 const LanguageSupportManagementPanel = () => {
   const [expand, setExpand] = useState(true);
@@ -11,8 +23,12 @@ const LanguageSupportManagementPanel = () => {
     language: "",
   });
 
-  const { projects, currentProjectId, updateProject } = useProjectStore();
-  const currentProject = projects[currentProjectId ?? ""];
+  const { updateProject } = useProjectStore();
+  const currentProject = useProjectStore(useShallow(currentProjectSelector));
+
+  if (!currentProject) {
+    return null;
+  }
 
   const handleAddLanguage = () => {
     if (!newLanguage.filename || !newLanguage.language) return;
@@ -67,86 +83,79 @@ const LanguageSupportManagementPanel = () => {
     toast("success", { description: "Language removed successfully" });
   };
 
-  if (!currentProject) {
-    return null;
-  }
-
   return (
     <>
-      {/* Add Language Dialog */}
-      {showLanguageDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-card to-card/50 backdrop-blur-sm shadow-xl rounded-lg max-w-md w-full mx-4 border-0">
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
-                  <Plus className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">Add New Language</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Add a new language to your project
-                  </p>
-                </div>
+      {/* Add Language Dialog using shadcn */}
+      <Dialog open={showLanguageDialog} onOpenChange={setShowLanguageDialog}>
+        <DialogContent className="sm:max-w-[475px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                <Plus className="w-5 h-5 text-green-600" />
               </div>
+              Add New Language
+            </DialogTitle>
+            <DialogDescription>
+              Add a new language to your project
+            </DialogDescription>
+          </DialogHeader>
 
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Language
-                  </label>
-                  <input
-                    type="text"
-                    value={newLanguage.language}
-                    onChange={(e) =>
-                      setNewLanguage((prev) => ({
-                        ...prev,
-                        language: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border-0 bg-muted/50 focus:bg-muted/70 rounded-md focus:outline-none focus:ring-2 focus:ring-primary transition-colors"
-                    placeholder="e.g., de, ja, pt"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">
-                    i18n Filename
-                  </label>
-                  <input
-                    type="text"
-                    value={newLanguage.filename}
-                    onChange={(e) =>
-                      setNewLanguage((prev) => ({
-                        ...prev,
-                        filename: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border-0 bg-muted/50 focus:bg-muted/70 rounded-md focus:outline-none focus:ring-2 focus:ring-primary transition-colors"
-                    placeholder="e.g., German, Japanese, Portuguese"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-6">
-                <button
-                  onClick={() => setShowLanguageDialog(false)}
-                  className="px-4 py-2 border border-border rounded-md hover:bg-muted/50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddLanguage}
-                  disabled={!newLanguage.language || !newLanguage.filename}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Add Language
-                </button>
-              </div>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="language" className="text-right">
+                Language
+              </Label>
+              <Input
+                id="language"
+                value={newLanguage.language}
+                onChange={(e) =>
+                  setNewLanguage((prev) => ({
+                    ...prev,
+                    language: e.target.value,
+                  }))
+                }
+                className="col-span-3"
+                placeholder="e.g., German, Japanese, Portuguese"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="filename" className="text-right">
+                i18n Filename
+              </Label>
+              <Input
+                id="filename"
+                value={newLanguage.filename}
+                onChange={(e) =>
+                  setNewLanguage((prev) => ({
+                    ...prev,
+                    filename: e.target.value,
+                  }))
+                }
+                className="col-span-3"
+                placeholder="e.g., en.json, pt-BR.json"
+              />
             </div>
           </div>
-        </div>
-      )}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowLanguageDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              onClick={handleAddLanguage}
+              disabled={!newLanguage.language || !newLanguage.filename}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Add Language
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm shadow-xl rounded-lg">
         <div
@@ -180,13 +189,14 @@ const LanguageSupportManagementPanel = () => {
           <div className="px-6 pb-6 border-t border-border/50 space-y-6 animate-in fade-in slide-in-from-top duration-300">
             <div className="mt-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold">Supported Languages</h3>
-              <button
+              <Button
                 onClick={() => setShowLanguageDialog(true)}
-                className="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center gap-2 text-sm"
+                className="bg-green-600 hover:bg-green-700"
+                size="sm"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4 mr-2" />
                 Add Language
-              </button>
+              </Button>
             </div>
 
             <div className="space-y-2">
@@ -203,12 +213,14 @@ const LanguageSupportManagementPanel = () => {
                     <span className="font-medium">{fileLanguage.filename}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleRemoveLanguage(fileLanguage.id)}
-                      className="p-1 rounded transition-colors text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
                       <Trash2 className="h-4 w-4" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))}
