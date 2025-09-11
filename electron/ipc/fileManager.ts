@@ -11,21 +11,22 @@ export type ProjectFile = {
   modified?: Date;
 };
 
-let ig: ReturnType<typeof ignore> | null = null;
-
-const loadGitIgnore = async (projectPath: string) => {
+const loadGitIgnore = async (
+  projectPath: string,
+): Promise<ReturnType<typeof ignore> | null> => {
   try {
     const gitIgnorePath = path.join(projectPath, ".gitignore");
     const content = await fs.readFile(gitIgnorePath, "utf-8");
-    ig = ignore().add(content.split("\n"));
+    return ignore().add(content.split("\n"));
   } catch {
-    ig = null; // no .gitignore
+    return null; // no .gitignore
   }
 };
 
 const readDirectoryRecursive = async (
   dirPath: string,
   rootPath: string,
+  ig: ReturnType<typeof ignore> | null = null,
 ): Promise<ProjectFile[]> => {
   const files: ProjectFile[] = [];
 
@@ -86,9 +87,13 @@ export const setupFileManagerIPCHandler = () => {
         await fs.access(projectPath);
 
         // Load .gitignore before reading
-        await loadGitIgnore(projectPath);
+        const ig = await loadGitIgnore(projectPath);
 
-        const files = await readDirectoryRecursive(projectPath, projectPath);
+        const files = await readDirectoryRecursive(
+          projectPath,
+          projectPath,
+          ig,
+        );
 
         files.sort((a, b) => {
           if (a.isDirectory && !b.isDirectory) return -1;
