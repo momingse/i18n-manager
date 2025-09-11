@@ -38,9 +38,10 @@ declare global {
         setItem: (key: string, value: string) => Promise<boolean>;
         removeItem: (key: string) => Promise<boolean>;
       };
-      readFiles: {
+      fileManager: {
         readProjectFiles: (projectPath: string) => Promise<ProjectFile[]>;
         readFileContent: (filePath: string) => Promise<string>;
+        writeFileContent: (filePath: string, content: string) => Promise<boolean>;
       };
       llm: {
         storeApiKey: (

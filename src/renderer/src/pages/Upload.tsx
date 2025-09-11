@@ -179,7 +179,7 @@ export default function UploadPage() {
       const translationResult = await Promise.all(
         selectedFiles.map(async (filePath) => {
           const fileContent =
-            await window.electronAPI.readFiles.readFileContent(filePath);
+            await window.electronAPI.fileManager.readFileContent(filePath);
 
           return translationWithLanguages(
             llmProvider,

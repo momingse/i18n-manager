@@ -3,7 +3,7 @@ import { app, BrowserWindow } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { setupLLMIPCHandler } from "./ipc/llm";
-import { setupReadFilesIPCHandler } from "./ipc/readFiles";
+import { setupFileManagerIPCHandler } from "./ipc/fileManager";
 import { setupStorageIPCHandler } from "./ipc/storage";
 import { initDatabase } from "./helper/storage";
 
@@ -94,7 +94,7 @@ app.whenReady().then(async () => {
   await initDatabase();
 
   setupStorageIPCHandler();
-  setupReadFilesIPCHandler();
+  setupFileManagerIPCHandler();
   setupLLMIPCHandler();
 
   createWindow();

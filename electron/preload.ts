@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import { LLMIPCChannel, ReadFilesIPCChannel, StorageIPCChannel } from "./ipc";
+import { LLMIPCChannel, FileManagerIPCChannel, StorageIPCChannel } from "./ipc";
 
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld("ipcRenderer", {
@@ -31,17 +31,20 @@ contextBridge.exposeInMainWorld("electronAPI", {
     getItem: (key) => ipcRenderer.invoke(StorageIPCChannel.getItem, key),
     setItem: (key, value) =>
       ipcRenderer.invoke(StorageIPCChannel.setItem, key, value),
-
     removeItem: (key: string): Promise<boolean> =>
       ipcRenderer.invoke(StorageIPCChannel.removeItem, key),
   },
-
-  readFiles: {
+  fileManager: {
     readProjectFiles: (projectPath) =>
-      ipcRenderer.invoke(ReadFilesIPCChannel.readProjectFiles, projectPath),
-
+      ipcRenderer.invoke(FileManagerIPCChannel.readProjectFiles, projectPath),
     readFileContent: (filePath) =>
-      ipcRenderer.invoke(ReadFilesIPCChannel.readFileContent, filePath),
+      ipcRenderer.invoke(FileManagerIPCChannel.readFileContent, filePath),
+    writeFileContent: (filePath, content) =>
+      ipcRenderer.invoke(
+        FileManagerIPCChannel.writeFileContent,
+        filePath,
+        content,
+      ),
   },
   llm: {
     storeApiKey: (apiKey, provider) =>

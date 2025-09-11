@@ -1,6 +1,6 @@
 import * as fs from "fs/promises";
 import * as path from "path";
-import { handleIPC, ReadFilesIPCChannel } from ".";
+import { handleIPC, FileManagerIPCChannel } from ".";
 
 export type ProjectFile = {
   name: string;
@@ -59,9 +59,9 @@ const readDirectoryRecursive = async (
   return files;
 };
 
-export const setupReadFilesIPCHandler = () => {
+export const setupFileManagerIPCHandler = () => {
   handleIPC(
-    ReadFilesIPCChannel.readProjectFiles,
+    FileManagerIPCChannel.readProjectFiles,
     async (event, projectPath) => {
       try {
         // Check if the project path exists
@@ -91,7 +91,7 @@ export const setupReadFilesIPCHandler = () => {
     },
   );
 
-  handleIPC(ReadFilesIPCChannel.readFileContent, async (event, filePath) => {
+  handleIPC(FileManagerIPCChannel.readFileContent, async (event, filePath) => {
     try {
       const content = await fs.readFile(filePath, "utf-8");
       return content;
@@ -100,4 +100,17 @@ export const setupReadFilesIPCHandler = () => {
       return "";
     }
   });
+
+  handleIPC(
+    FileManagerIPCChannel.writeFileContent,
+    async (event, filePath, content) => {
+      try {
+        await fs.writeFile(filePath, content);
+        return true;
+      } catch (error) {
+        console.error(`Failed to write file content to ${filePath}:`, error);
+        return false;
+      }
+    },
+  );
 };

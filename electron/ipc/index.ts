@@ -1,8 +1,7 @@
 // src/types/ipc.ts
-import { LLMConfig, LLMProvider } from "../types/llm";
 import { ProjectFile } from "@/store/project";
-import { Schema } from "ai";
 import { ipcMain, IpcMainInvokeEvent } from "electron";
+import { LLMConfig, LLMProvider } from "../types/llm";
 
 export enum LLMIPCChannel {
   storeApiKey = "llm:store-api-key",
@@ -17,9 +16,10 @@ export enum StorageIPCChannel {
   removeItem = "storage:removeItem",
 }
 
-export enum ReadFilesIPCChannel {
-  readProjectFiles = "readFiles:read-project-files",
-  readFileContent = "readFiles:read-file-content",
+export enum FileManagerIPCChannel {
+  readProjectFiles = "fileManager:read-project-files",
+  readFileContent = "fileManager:read-file-content",
+  writeFileContent = "fileManager:write-file-content",
 }
 
 // Contracts
@@ -51,19 +51,23 @@ export interface StorageIPC {
   [StorageIPCChannel.removeItem]: { args: [key: string]; return: boolean };
 }
 
-export interface ReadFilesIPC {
-  [ReadFilesIPCChannel.readProjectFiles]: {
+export interface FileManagerIPC {
+  [FileManagerIPCChannel.readProjectFiles]: {
     args: [projectPath: string];
     return: ProjectFile[];
   };
-  [ReadFilesIPCChannel.readFileContent]: {
+  [FileManagerIPCChannel.readFileContent]: {
     args: [filePath: string];
     return: string;
+  };
+  [FileManagerIPCChannel.writeFileContent]: {
+    args: [filePath: string, content: string];
+    return: boolean;
   };
 }
 
 // Root contract
-export interface IPCContract extends LLMIPC, StorageIPC, ReadFilesIPC {}
+export interface IPCContract extends LLMIPC, StorageIPC, FileManagerIPC {}
 
 type Handler<K extends keyof IPCContract> = (
   event: IpcMainInvokeEvent,

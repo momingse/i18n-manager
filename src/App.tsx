@@ -2,11 +2,14 @@ import { Navigation } from "@/components/navigation";
 import InitPage from "@/pages/Init";
 import { routes } from "@/routes";
 import { useProjectStore } from "@/store/project";
+import { useProjectSubscriber } from "@/store/subscriber/project";
 import { HashRouter, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 
 const App = () => {
   const { currentProjectId } = useProjectStore();
+
+  useProjectSubscriber();
 
   if (!currentProjectId) return <InitPage />;
 
