@@ -37,6 +37,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   fileManager: {
     readProjectFiles: (projectPath) =>
       ipcRenderer.invoke(FileManagerIPCChannel.readProjectFiles, projectPath),
+    readProjectFolders: (projectPath) =>
+      ipcRenderer.invoke(FileManagerIPCChannel.readProjectFolders, projectPath),
     readFileContent: (filePath) =>
       ipcRenderer.invoke(FileManagerIPCChannel.readFileContent, filePath),
     writeFileContent: (filePath, content) =>

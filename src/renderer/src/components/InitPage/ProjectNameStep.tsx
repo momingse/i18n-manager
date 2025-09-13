@@ -1,5 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowRight, FolderPlus } from "lucide-react";
@@ -15,6 +20,13 @@ export function ProjectNameStep({
   onProjectNameChange,
   onNext,
 }: ProjectNameStepProps) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && projectName.trim()) {
+      e.preventDefault();
+      onNext();
+    }
+  };
+
   return (
     <>
       <CardHeader className="pb-4">
@@ -36,6 +48,7 @@ export function ProjectNameStep({
             placeholder="My Awesome App"
             value={projectName}
             onChange={(e) => onProjectNameChange(e.target.value)}
+            onKeyDown={handleKeyDown}
             className="mt-2 h-11 bg-muted/50 border-0 focus:bg-muted/70 transition-colors duration-200"
           />
         </div>

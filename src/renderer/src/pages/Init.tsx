@@ -38,7 +38,10 @@ export default function InitPage() {
       projectData.name,
       projectData.projectPath,
       projectData.i18nPath,
-      detectedLanguages,
+      detectedLanguages.map<i18nLanguage>((lang) => ({
+        ...lang,
+        filename: `${lang.filename}.json`,
+      })),
     );
   };
 

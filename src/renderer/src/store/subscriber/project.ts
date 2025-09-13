@@ -13,8 +13,6 @@ type ProjectStoreSubscribeState = {
 
 export const useProjectSubscriber = () => {
   useEffect(() => {
-    const DEBOUNCE_MS = 250;
-
     const handler = async (
       state: ProjectStoreSubscribeState,
       prevState: ProjectStoreSubscribeState,
@@ -23,11 +21,7 @@ export const useProjectSubscriber = () => {
 
       await Promise.all(
         state.fileLanguageMap.map(async (lang) => {
-          const fullPath = path.join(
-            state.projectPath,
-            state.translationPath,
-            lang.filename,
-          );
+          const fullPath = path.join(state.translationPath, lang.filename);
           let fileContent: string | null = null;
 
           try {
@@ -102,7 +96,7 @@ export const useProjectSubscriber = () => {
       );
     };
 
-    const debouncedHandler = debounce(handler, DEBOUNCE_MS);
+    const debouncedHandler = debounce(handler);
 
     const unsub = useProjectStore.subscribe<ProjectStoreSubscribeState>(
       (state) => ({

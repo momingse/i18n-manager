@@ -6,12 +6,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Globe, Rocket } from "lucide-react";
+import { i18nLanguage, ProjectFile } from "@/store/project";
+import { Globe, Loader2, Rocket, RotateCw } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { LanguageManager } from "./LanguageManager";
 import { PathInput } from "./PathInput";
-import { i18nLanguage } from "@/store/project";
+import path from "path-browserify";
 
 interface I18nConfigStepProps {
+  projectPath?: string;
   i18nPath: string;
   onI18nPathChange: (path: string) => void;
   detectedLanguages: i18nLanguage[];
@@ -22,6 +25,7 @@ interface I18nConfigStepProps {
 }
 
 export function I18nConfigStep({
+  projectPath,
   i18nPath,
   onI18nPathChange,
   detectedLanguages,
@@ -30,6 +34,47 @@ export function I18nConfigStep({
   onPrev,
   onCreateProject,
 }: I18nConfigStepProps) {
+  const [availableFolders, setAvailableFolders] = useState<ProjectFile[]>([]);
+  const [availableJsonFiles, setAvailableJsonFiles] = useState<ProjectFile[]>(
+    [],
+  );
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const fetchAvailableFolders = useCallback(async () => {
+    if (!projectPath) return;
+    try {
+      setIsRefreshing(true);
+      const folders =
+        await window.electronAPI.fileManager.readProjectFolders(projectPath);
+      setAvailableFolders(folders);
+    } catch (err) {
+      // optionally surface error to user with a toast
+      console.error("Failed to read project folders", err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [projectPath]);
+
+  const fetchAllJsonFile = useCallback(async () => {
+    if (!projectPath || !i18nPath) return;
+
+    const fullI18nPath = path.join(i18nPath);
+    try {
+      const files =
+        await window.electronAPI.fileManager.readProjectFiles(fullI18nPath);
+      const jsonFiles = files.filter((file) => file.name.endsWith(".json"));
+      setAvailableJsonFiles(jsonFiles);
+    } catch (err) {
+      // optionally surface error to user with a toast
+      console.error("Failed to read project files", err);
+    }
+  }, [projectPath, i18nPath]);
+
+  useEffect(() => {
+    fetchAvailableFolders();
+    fetchAllJsonFile();
+  }, [fetchAvailableFolders, fetchAllJsonFile]);
+
   return (
     <>
       <CardHeader className="pb-4">
@@ -41,16 +86,45 @@ export function I18nConfigStep({
           Configure your translation files location and languages
         </CardDescription>
       </CardHeader>
+
       <CardContent className="space-y-6">
-        <div className="relative">
-          <Label htmlFor="i18n-path" className="text-sm font-medium">
-            i18n Directory Path *
-          </Label>
-          <PathInput
-            value={i18nPath}
-            onChange={onI18nPathChange}
-            placeholder="./locales"
-          />
+        <div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="i18n-path" className="text-sm font-medium">
+              i18n Directory Path *
+            </Label>
+
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={fetchAvailableFolders}
+                disabled={!projectPath || isRefreshing}
+                className="h-8 px-2"
+                aria-label="Refresh folders"
+                title={projectPath ? "Refresh folders" : "Open a project first"}
+              >
+                {isRefreshing ? (
+                  <Loader2
+                    className={`w-4 h-4 transition-transform ${isRefreshing ? "animate-spin" : ""}`}
+                  />
+                ) : (
+                  <RotateCw
+                    className={`w-4 h-4 transition-transform ${isRefreshing ? "animate-spin" : ""}`}
+                  />
+                )}
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-2">
+            <PathInput
+              value={i18nPath}
+              onChange={onI18nPathChange}
+              placeholder="Enter the path to your i18n directory"
+              availableFolders={availableFolders}
+            />
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -64,6 +138,8 @@ export function I18nConfigStep({
           </div>
 
           <LanguageManager
+            disabled={!i18nPath}
+            availableJsonFiles={availableJsonFiles}
             detectedLanguages={detectedLanguages}
             setDetectedLanguages={setDetectedLanguages}
           />
@@ -77,6 +153,7 @@ export function I18nConfigStep({
           >
             Back
           </Button>
+
           <Button
             onClick={onCreateProject}
             disabled={
@@ -101,4 +178,3 @@ export function I18nConfigStep({
     </>
   );
 }
-

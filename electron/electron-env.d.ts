@@ -1,5 +1,6 @@
 /// <reference types="vite-plugin-electron/electron-env" />
 
+import { ProjectFile } from "./ipc/fileManager";
 import { LLMConfig, LLMProvider } from "./types/llm";
 
 declare namespace NodeJS {
@@ -40,8 +41,12 @@ declare global {
       };
       fileManager: {
         readProjectFiles: (projectPath: string) => Promise<ProjectFile[]>;
+        readProjectFolders: (projectPath: string) => Promise<ProjectFile[]>;
         readFileContent: (filePath: string) => Promise<string>;
-        writeFileContent: (filePath: string, content: string) => Promise<boolean>;
+        writeFileContent: (
+          filePath: string,
+          content: string,
+        ) => Promise<boolean>;
       };
       llm: {
         storeApiKey: (

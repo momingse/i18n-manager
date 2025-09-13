@@ -18,6 +18,7 @@ export enum StorageIPCChannel {
 
 export enum FileManagerIPCChannel {
   readProjectFiles = "fileManager:read-project-files",
+  readProjectFolders = "fileManager:read-project-folders",
   readFileContent = "fileManager:read-file-content",
   writeFileContent = "fileManager:write-file-content",
 }
@@ -53,6 +54,10 @@ export interface StorageIPC {
 
 export interface FileManagerIPC {
   [FileManagerIPCChannel.readProjectFiles]: {
+    args: [projectPath: string];
+    return: ProjectFile[];
+  };
+  [FileManagerIPCChannel.readProjectFolders]: {
     args: [projectPath: string];
     return: ProjectFile[];
   };

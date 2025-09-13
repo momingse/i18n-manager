@@ -1,38 +1,55 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronDown, Plus, X } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { COMMON_LANGUAGES } from "@/constants/constants";
+import { i18nLanguage, ProjectFile } from "@/store/project";
+import { AlertCircle, FileText, Plus, X } from "lucide-react";
 import { useState } from "react";
-import { i18nLanguage } from "@/store/project";
+import { InputWithDropdown } from "../InputWithDropdownProps";
 
 interface LanguageManagerProps {
+  disabled: boolean;
+  availableJsonFiles: ProjectFile[];
   detectedLanguages: i18nLanguage[];
   setDetectedLanguages: React.Dispatch<React.SetStateAction<i18nLanguage[]>>;
 }
 
-export function LanguageManager({
+export const LanguageManager = ({
+  disabled,
+  availableJsonFiles,
   detectedLanguages,
   setDetectedLanguages,
-}: LanguageManagerProps) {
-  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState<
-    (typeof COMMON_LANGUAGES)[0] | null
-  >(null);
+}: LanguageManagerProps) => {
+  const [selectedFile, setSelectedFile] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState("");
 
-  const addLanguage = () => {
-    if (!selectedLanguage) return;
+  // Check if current combination already exists
+  const combinationExists = detectedLanguages.some(
+    (lang) => lang.filename === selectedFile.replace(".json", ""),
+  );
 
-    const newLang = {
+  // Check if the selected file exists in available files
+  const fileExists = availableJsonFiles.some(
+    (file) =>
+      file.name === selectedFile || file.name === `${selectedFile}.json`,
+  );
+
+  const addLanguageMapping = () => {
+    if (!selectedFile || !selectedLanguage) return;
+
+    const fileName = selectedFile.replace(".json", "");
+
+    const newLang: i18nLanguage = {
       id: crypto.randomUUID(),
-      filename: selectedLanguage.code,
-      language: selectedLanguage.name,
+      filename: fileName,
+      language: selectedLanguage,
     };
 
-    setDetectedLanguages([...detectedLanguages, newLang]);
-    setSelectedLanguage(null);
-    setShowLanguageDropdown(false);
+    setDetectedLanguages((prev) => [...prev, newLang]);
+
+    // Reset form
+    setSelectedFile("");
+    setSelectedLanguage("");
   };
 
   const removeLanguage = (id: string) => {
@@ -51,135 +68,164 @@ export function LanguageManager({
     );
   };
 
-  const availableLanguages = COMMON_LANGUAGES.filter(
-    (lang) => !detectedLanguages.some((detected) => detected.filename === lang.code),
-  );
+  if (disabled) {
+    return (
+      <div className="border border-dashed border-border/50 rounded-lg p-6 bg-muted/10 text-center">
+        <p className="text-sm text-muted-foreground">
+          Please select a project folder first
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <>
-      {/* Language List */}
+    <div className="space-y-6">
+      {/* Add New Language File Mapping */}
+      <div className="space-y-4 p-4 border border-border/50 rounded-lg bg-card">
+        <Label className="text-sm font-medium">Add Language File</Label>
+
+        {/* File Selection */}
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">
+            Language File *
+          </Label>
+          <InputWithDropdown
+            value={selectedFile}
+            onChange={setSelectedFile}
+            items={availableJsonFiles.map((file) => ({
+              value: file.name,
+              label: file.name,
+              description: file.path,
+            }))}
+            placeholder="Type or select a file name (e.g., en.json)"
+            className="h-9 text-sm"
+            dropdownClassName="max-h-48 overflow-y-auto"
+          />
+
+          {/* File doesn't exist indicator */}
+          {selectedFile && !fileExists && (
+            <div className="flex items-center gap-1 mt-1 text-xs text-amber-600">
+              <FileText className="w-3 h-3" />
+              <span>
+                This file does not exist and will be created with the project
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Language Selection */}
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Language *</Label>
+          <InputWithDropdown
+            value={selectedLanguage}
+            onChange={setSelectedLanguage}
+            items={COMMON_LANGUAGES.map((language) => ({
+              value: language.name,
+              label: language.name,
+            }))}
+            placeholder="Type or select a language..."
+            className="h-8 text-sm"
+            dropdownClassName="overflow-scroll max-h-48"
+          />
+        </div>
+
+        {/* Add Button */}
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={addLanguageMapping}
+            disabled={!selectedFile || !selectedLanguage || combinationExists}
+            className="h-9 px-4"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Language File
+          </Button>
+
+          {combinationExists && (
+            <div className="flex items-center gap-1 text-xs text-amber-600">
+              <AlertCircle className="w-3 h-3" />
+              <span>This file is already configured</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Configured Language Files */}
       {detectedLanguages.length > 0 && (
-        <div className="space-y-2 overflow-y-auto border border-border/50 rounded-lg p-2 bg-muted/20">
-          {detectedLanguages.map((lang) => (
-            <div
-              key={lang.id}
-              className="flex items-center gap-3 p-3 bg-card rounded-lg border border-border/30 shadow-sm"
-            >
-              <div className="flex-1 grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">
-                    Filename
-                  </Label>
-                  <div className="flex items-center gap-1">
-                    <Input
-                      value={lang.filename}
-                      onChange={(e) =>
-                        updateLanguage(lang.id, "filename", e.target.value)
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">
+            Configured Languages ({detectedLanguages.length})
+          </Label>
+          <div className="space-y-2 max-h-64">
+            {detectedLanguages.map((lang) => (
+              <div
+                key={lang.id}
+                className="flex items-center gap-3 p-3 bg-card rounded-lg border border-border/30 shadow-sm"
+              >
+                <div className="flex-1 grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">
+                      Filename
+                    </Label>
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={lang.filename}
+                        onChange={(e) =>
+                          updateLanguage(lang.id, "filename", e.target.value)
+                        }
+                        className="h-8 text-sm bg-background/80 border-border/50"
+                        placeholder="en"
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        .json
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">
+                      Language *
+                    </Label>
+                    <InputWithDropdown
+                      value={lang.language}
+                      onChange={(value) =>
+                        updateLanguage(lang.id, "language", value)
                       }
+                      placeholder="Language for this file..."
+                      items={COMMON_LANGUAGES.map((l) => ({
+                        value: l.name,
+                        label: l.name,
+                      }))}
                       className="h-8 text-sm bg-background/80 border-border/50"
-                      placeholder="en"
+                      dropdownClassName="overflow-scroll max-h-40"
                     />
-                    <span className="text-xs text-muted-foreground">.json</span>
                   </div>
                 </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">
-                    Language
-                  </Label>
-                  <Input
-                    value={lang.language}
-                    onChange={(e) =>
-                      updateLanguage(lang.id, "language", e.target.value)
-                    }
-                    className="h-8 text-sm bg-background/80 border-border/50"
-                    placeholder="English"
-                    readOnly
-                  />
+                <div className="pt-5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeLanguage(lang.id)}
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => removeLanguage(lang.id)}
-                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Add Language Section */}
-      <div className="border border-dashed border-border/50 rounded-lg p-4 bg-muted/10">
-        <Label className="text-sm font-medium mb-3 block">Add New Language</Label>
-        <div className="space-y-3">
-          <div className="relative">
-            <Button
-              variant="outline"
-              onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-              className="w-full h-10 justify-between text-sm bg-background/80 hover:bg-muted/70 border-border/50"
-            >
-              {selectedLanguage ? (
-                <span className="flex items-center gap-2">
-                  <span className="text-base">{selectedLanguage.flag}</span>
-                  <span>{selectedLanguage.name}</span>
-                  <span className="text-muted-foreground text-xs">
-                    ({selectedLanguage.code}.json)
-                  </span>
-                </span>
-              ) : (
-                <span className="text-muted-foreground">Choose a language...</span>
-              )}
-              <ChevronDown
-                className={cn(
-                  "w-4 h-4 transition-transform duration-200",
-                  showLanguageDropdown && "rotate-180",
-                )}
-              />
-            </Button>
-
-            {showLanguageDropdown && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-xl z-50 max-h-56 overflow-y-auto">
-                {availableLanguages.map((language) => (
-                  <button
-                    key={language.code}
-                    type="button"
-                    onClick={() => {
-                      setSelectedLanguage(language);
-                      setShowLanguageDropdown(false);
-                    }}
-                    className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors duration-150 text-sm border-b border-border/30 last:border-b-0 flex items-center gap-3"
-                  >
-                    <span className="text-base">{language.flag}</span>
-                    <div className="flex-1">
-                      <span className="font-medium">{language.name}</span>
-                    </div>
-                    <span className="text-muted-foreground text-xs bg-muted/50 px-2 py-1 rounded">
-                      {language.code}.json
-                    </span>
-                  </button>
-                ))}
-                {availableLanguages.length === 0 && (
-                  <div className="px-4 py-3 text-sm text-muted-foreground text-center">
-                    All languages have been added
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <Button
-            onClick={addLanguage}
-            disabled={!selectedLanguage}
-            size="sm"
-            className="w-full h-9 bg-primary/90 hover:bg-primary"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add {selectedLanguage?.name || "Language"}
-          </Button>
+      {/* Empty State */}
+      {availableJsonFiles.length === 0 && detectedLanguages.length === 0 && (
+        <div className="border border-dashed border-border/50 rounded-lg p-6 bg-muted/10 text-center">
+          <p className="text-sm text-muted-foreground">
+            No JSON files found in the i18n directory
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            You can still create new language files using the form above
+          </p>
         </div>
-      </div>
-    </>
+      )}
+    </div>
   );
-}
+};
