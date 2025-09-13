@@ -10,7 +10,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import translationWithLanguages from "@/lib/aiTransaction";
-import { matchesAnyPattern } from "@/lib/searchPattern";
+import { searchFiles } from "@/lib/searchPattern";
+import { debounce } from "@/lib/debounce";
 import { cn } from "@/lib/utils";
 import { useLLMStore } from "@/store/llm";
 import { currentProjectSelector, useProjectStore } from "@/store/project";
@@ -29,13 +30,14 @@ import {
   X,
 } from "lucide-react";
 import type React from "react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useShallow } from "zustand/shallow";
 
 export default function UploadPage() {
   const [searchPattern, setSearchPattern] = useState("");
+  const [debouncedSearchPattern, setDebouncedSearchPattern] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -60,75 +62,32 @@ export default function UploadPage() {
     handler: handleHideDropdown,
   });
 
+  // Create debounced search function
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((pattern: string) => {
+        setDebouncedSearchPattern(pattern);
+      }, 300),
+    [],
+  );
+
+  // Effect to trigger debounced search when searchPattern changes
+  useEffect(() => {
+    debouncedSearch(searchPattern);
+  }, [searchPattern, debouncedSearch]);
+
   const filteredFiles = useMemo(() => {
-    if (!searchPattern.trim()) return [];
-
-    const pattern = searchPattern.trim();
-
-    // Split pattern by spaces to handle multiple patterns
-    const patterns = pattern.split(/\s+/).filter((p) => p.length > 0);
-
-    // Separate inclusion and exclusion patterns
-    const inclusionPatterns = patterns.filter((p) => !p.startsWith("!"));
-    const exclusionPatterns = patterns
-      .filter((p) => p.startsWith("!"))
-      .map((p) => p.slice(1));
-
-    let results = currentProjectFiles;
-
-    // TODO: exclude .gitignore files
-
-    // Apply inclusion filters (if any)
-    if (inclusionPatterns.length > 0) {
-      results = currentProjectFiles.filter((file) =>
-        matchesAnyPattern(file, inclusionPatterns),
-      );
-    }
-
-    // Apply exclusion filters
-    if (exclusionPatterns.length > 0) {
-      results = results.filter(
-        (file) => !matchesAnyPattern(file, exclusionPatterns, true),
-      );
-    }
-
-    // Sort results by relevance
-    results.sort((a, b) => {
-      const aName = a.name.toLowerCase();
-      const bName = b.name.toLowerCase();
-      const searchLower =
-        inclusionPatterns[0]?.toLowerCase() || pattern.toLowerCase();
-
-      // Exact name matches first
-      if (aName === searchLower && bName !== searchLower) return -1;
-      if (bName === searchLower && aName !== searchLower) return 1;
-
-      // Name starts with pattern
-      const aStartsWith = aName.startsWith(searchLower);
-      const bStartsWith = bName.startsWith(searchLower);
-      if (aStartsWith && !bStartsWith) return -1;
-      if (bStartsWith && !aStartsWith) return 1;
-
-      // Name contains pattern
-      const aNameContains = aName.includes(searchLower);
-      const bNameContains = bName.includes(searchLower);
-      if (aNameContains && !bNameContains) return -1;
-      if (bNameContains && !aNameContains) return 1;
-
-      // Alphabetical order as fallback
-      return aName.localeCompare(bName);
-    });
-
-    return results;
-  }, [currentProjectFiles, searchPattern]);
+    return searchFiles(currentProjectFiles, debouncedSearchPattern);
+  }, [currentProjectFiles, debouncedSearchPattern]);
 
   if (!currentProject) {
     return null;
   }
 
   const handlePatternChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchPattern(e.target.value);
-    setShowDropdown(e.target.value.trim().length > 0);
+    const value = e.target.value;
+    setSearchPattern(value);
+    setShowDropdown(value.trim().length > 0);
   };
 
   const handleFileAction = (filePath: string) => {
@@ -138,6 +97,7 @@ export default function UploadPage() {
       handleRemoveFile(filePath);
     }
     setSearchPattern("");
+    setDebouncedSearchPattern("");
     setShowDropdown(false);
   };
 
@@ -285,57 +245,73 @@ export default function UploadPage() {
                   )}
                 </div>
 
-                {showDropdown && filteredFiles.length > 0 && (
+                {showDropdown && (
                   <div
                     className="absolute top-full left-0 right-0 z-10 mt-1 bg-background border rounded-lg shadow-lg max-h-60 overflow-y-auto"
                     ref={dropDownRef}
                   >
-                    {filteredFiles.map((file) => {
-                      const isFileSelected = selectedFiles.includes(file.path);
-                      return (
-                        <div
-                          key={file.path}
-                          className={cn(
-                            "flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer transition-colors duration-150",
-                            isFileSelected &&
-                              "bg-primary/10 border-l-2 border-l-primary",
-                          )}
-                          onClick={() => handleFileAction(file.path)}
-                        >
-                          <div className="flex items-center gap-3">
-                            <FileText
-                              className={cn(
-                                "w-4 h-4",
-                                isFileSelected
-                                  ? "text-primary"
-                                  : "text-muted-foreground",
-                              )}
-                            />
-                            <div>
-                              <div
+                    {searchPattern.trim().length > 0 &&
+                    debouncedSearchPattern !== searchPattern ? (
+                      <div className="flex items-center justify-center p-4">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <div className="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
+                          <span className="text-sm">Searching...</span>
+                        </div>
+                      </div>
+                    ) : filteredFiles.length > 0 ? (
+                      filteredFiles.map((file) => {
+                        const isFileSelected = selectedFiles.includes(
+                          file.path,
+                        );
+                        return (
+                          <div
+                            key={file.path}
+                            className={cn(
+                              "flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer transition-colors duration-150",
+                              isFileSelected &&
+                                "bg-primary/10 border-l-2 border-l-primary",
+                            )}
+                            onClick={() => handleFileAction(file.path)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <FileText
                                 className={cn(
-                                  "font-medium text-sm flex items-center gap-2",
-                                  isFileSelected && "text-primary",
+                                  "w-4 h-4",
+                                  isFileSelected
+                                    ? "text-primary"
+                                    : "text-muted-foreground",
                                 )}
-                              >
-                                {file.name}
-                                {isFileSelected && (
-                                  <Check className="w-3 h-3 text-primary" />
-                                )}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {file.path}
+                              />
+                              <div>
+                                <div
+                                  className={cn(
+                                    "font-medium text-sm flex items-center gap-2",
+                                    isFileSelected && "text-primary",
+                                  )}
+                                >
+                                  {file.name}
+                                  {isFileSelected && (
+                                    <Check className="w-3 h-3 text-primary" />
+                                  )}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {file.path}
+                                </div>
                               </div>
                             </div>
+                            {isFileSelected ? (
+                              <Minus className="w-4 h-4 text-destructive" />
+                            ) : (
+                              <Plus className="w-4 h-4 text-primary" />
+                            )}
                           </div>
-                          {isFileSelected ? (
-                            <Minus className="w-4 h-4 text-destructive" />
-                          ) : (
-                            <Plus className="w-4 h-4 text-primary" />
-                          )}
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                    ) : (
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        No files found matching "{debouncedSearchPattern}"
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
