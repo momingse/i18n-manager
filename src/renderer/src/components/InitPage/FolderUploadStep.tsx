@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { ArrowRight, FolderOpen, Upload, Loader2 } from "lucide-react";
+import path from "path-browserify";
 import { useState } from "react";
 
 interface FolderUploadStepProps {
@@ -40,7 +41,7 @@ export const FolderUploadStep = ({
       // Simulate processing time for large folders
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      const folderPath = files[0].path.split("/").slice(0, -1).join("/");
+      const folderPath = path.dirname(files[0].path);
       onFolderChange(folderPath);
     } catch (error) {
       console.error("Error processing folder:", error);

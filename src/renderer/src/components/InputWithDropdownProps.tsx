@@ -1,16 +1,13 @@
 import { Input } from "@/components/ui/input";
-import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { cn } from "@/lib/utils";
 import { Check, ChevronDown, X } from "lucide-react";
 import {
   HTMLProps,
-  useCallback,
   useEffect,
   useMemo,
   useRef,
-  useState,
+  useState
 } from "react";
-import { ClassNameValue } from "tailwind-merge";
 
 interface DropdownItem {
   value: string;

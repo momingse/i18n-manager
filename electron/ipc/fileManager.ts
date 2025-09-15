@@ -52,7 +52,7 @@ const readDirectoryRecursive = async (
         stats = await fs.stat(fullPath);
         isDirectory = stats.isDirectory();
       } catch (statError) {
-        console.warn(`Could not get stats for ${fullPath}:`, statError);
+        console.error(`Could not get stats for ${fullPath}:`, statError);
       }
 
       const projectFile: ProjectFile = {

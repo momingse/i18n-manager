@@ -124,8 +124,9 @@ export const useProjectStore = create<ProjectStore>()(
                 [curr.language]: JSON.parse(content),
               };
             } catch {
-              return acc;
+              console.error(`Failed to read ${fullPath}`);
             }
+            return acc;
           }, Promise.resolve({}));
 
           const newProject: Project = {

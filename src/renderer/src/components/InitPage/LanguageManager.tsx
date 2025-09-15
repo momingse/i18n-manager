@@ -37,7 +37,9 @@ export const LanguageManager = ({
   const addLanguageMapping = () => {
     if (!selectedFile || !selectedLanguage) return;
 
-    const fileName = selectedFile.replace(".json", "");
+    const fileName = selectedFile.endsWith(".json")
+      ? selectedFile.slice(0, -5)
+      : selectedFile;
 
     const newLang: i18nLanguage = {
       id: crypto.randomUUID(),
