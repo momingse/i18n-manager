@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useProjectStore } from "@/store/project";
-import { ChevronDown, FileText, FolderOpen, Globe } from "lucide-react";
+import { ChevronDown, FileText, FolderOpen, Globe, Plus } from "lucide-react";
 import { useState } from "react";
 
 interface ProjectSelectorProps {
@@ -16,19 +16,8 @@ interface ProjectSelectorProps {
 }
 
 export function ProjectSelector({ isOpen }: ProjectSelectorProps) {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [newProject, setNewProject] = useState({
-    name: "",
-    description: "",
-    languages: ["en"],
-  });
-
-  const { currentProjectId, projects, switchProject, createProject } =
+  const { currentProjectId, projects, switchProject, unsetCurrentProject } =
     useProjectStore();
-
-  const handleCreateProject = () => {
-    // TODO: create project
-  };
 
   if (!currentProjectId) return null;
 
@@ -135,73 +124,14 @@ export function ProjectSelector({ isOpen }: ProjectSelectorProps) {
             </div>
           )}
 
-          {/* <DropdownMenuSeparator /> */}
-          {/*     <Dialog */}
-          {/*       open={isCreateDialogOpen} */}
-          {/*       onOpenChange={setIsCreateDialogOpen} */}
-          {/*     > */}
-          {/*       <DialogTrigger asChild> */}
-          {/*         <DropdownMenuItem onSelect={(e) => e.preventDefault()}> */}
-          {/*           <Plus className="w-4 h-4 mr-2" /> */}
-          {/*           Create New Project */}
-          {/*         </DropdownMenuItem> */}
-          {/*       </DialogTrigger> */}
-          {/*       <DialogContent className="sm:max-w-md"> */}
-          {/*         <DialogHeader> */}
-          {/*           <DialogTitle>Create New Project</DialogTitle> */}
-          {/*           <DialogDescription> */}
-          {/*             Set up a new translation project with its own settings and */}
-          {/*             data. */}
-          {/*           </DialogDescription> */}
-          {/*         </DialogHeader> */}
-          {/*         <div className="space-y-4"> */}
-          {/*           <div> */}
-          {/*             <Label htmlFor="project-name">Project Name</Label> */}
-          {/*             <Input */}
-          {/*               id="project-name" */}
-          {/*               placeholder="My Translation Project" */}
-          {/*               value={newProject.name} */}
-          {/*               onChange={(e) => */}
-          {/*                 setNewProject({ ...newProject, name: e.target.value }) */}
-          {/*               } */}
-          {/*               className="mt-1" */}
-          {/*             /> */}
-          {/*           </div> */}
-          {/*           <div> */}
-          {/*             <Label htmlFor="project-description">Description</Label> */}
-          {/*             <Textarea */}
-          {/*               id="project-description" */}
-          {/*               placeholder="Brief description of this project..." */}
-          {/*               value={newProject.description} */}
-          {/*               onChange={(e) => */}
-          {/*                 setNewProject({ */}
-          {/*                   ...newProject, */}
-          {/*                   description: e.target.value, */}
-          {/*                 }) */}
-          {/*               } */}
-          {/*               rows={3} */}
-          {/*               className="mt-1" */}
-          {/*             /> */}
-          {/*           </div> */}
-          {/*           <div className="flex gap-3 pt-4"> */}
-          {/*             <Button */}
-          {/*               variant="outline" */}
-          {/*               onClick={() => setIsCreateDialogOpen(false)} */}
-          {/*               className="flex-1" */}
-          {/*             > */}
-          {/*               Cancel */}
-          {/*             </Button> */}
-          {/*             <Button */}
-          {/*               onClick={handleCreateProject} */}
-          {/*               disabled={!newProject.name.trim()} */}
-          {/*               className="flex-1" */}
-          {/*             > */}
-          {/*               Create Project */}
-          {/*             </Button> */}
-          {/*           </div> */}
-          {/*         </div> */}
-          {/*       </DialogContent> */}
-          {/*     </Dialog> */}
+          <Button
+            variant="ghost"
+            className="w-full"
+            onClick={unsetCurrentProject}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create New Project
+          </Button>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

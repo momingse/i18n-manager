@@ -7,6 +7,7 @@ import {
   subscribeWithSelector,
 } from "zustand/middleware";
 import createDeepMerge from "@fastify/deepmerge";
+import path from "path-browserify";
 
 export type i18nLanguage = {
   id: string;
@@ -52,10 +53,10 @@ type ProjectStoreActions = {
     path: string,
     i18nPath: string,
     fileLanguageMap: i18nLanguage[],
-    data?: Record<string, Record<string, string>>,
   ) => void;
   switchProject: (projectId: string) => void;
   updateProject: (project: Project) => void;
+  unsetCurrentProject: () => void;
   removeCurrentProject: () => void;
   removeLanguage: (languageId: string) => void;
   removeTranslationByKey: (key: string) => void;
@@ -93,22 +94,57 @@ export const useProjectStore = create<ProjectStore>()(
         projects: {},
         currentProjectFiles: [],
 
-        createProject: (projectName, path, i18nPath, fileLanguageMap, data) => {
+        createProject: async (
+          projectName,
+          projectPath,
+          i18nPath,
+          fileLanguageMap,
+        ) => {
+          const existingData: Record<
+            string,
+            Record<string, string>
+          > = await fileLanguageMap.reduce(async (accPromise, curr) => {
+            const acc = await accPromise;
+            const fullPath = path.join(i18nPath, curr.filename);
+
+            try {
+              const content =
+                await window.electronAPI.fileManager.readFileContent(fullPath);
+
+              if (!content) {
+                await window.electronAPI.fileManager.writeFileContent(
+                  fullPath,
+                  "{}",
+                );
+                return acc;
+              }
+
+              return {
+                ...acc,
+                [curr.language]: JSON.parse(content),
+              };
+            } catch {
+              console.error(`Failed to read ${fullPath}`);
+            }
+            return acc;
+          }, Promise.resolve({}));
+
           const newProject: Project = {
             id: crypto.randomUUID(),
             name: projectName,
-            path,
+            path: projectPath,
             i18nPath,
             fileLanguageMap,
             createdAt: new Date(),
             updatedAt: new Date(),
             translationCount: 0,
-            data: data || {},
+            data: existingData,
             undoableStack: {
               redoStack: [],
               undoStack: [],
             },
           };
+
           set((state) => ({
             ...state,
             currentProjectId: newProject.id,
@@ -138,18 +174,27 @@ export const useProjectStore = create<ProjectStore>()(
           }));
         },
 
+        unsetCurrentProject: () => {
+          set((state) => ({
+            ...state,
+            currentProjectId: undefined,
+            currentProjectFiles: [],
+          }));
+        },
+
         removeCurrentProject: () => {
           set((state) => {
             if (!state.currentProjectId) return state;
 
             // remove current project
-            const updatedProjects = { ...state.projects };
+            const updatedProjects = deepClone(state.projects);
             delete updatedProjects[state.currentProjectId];
 
             // check if there is another project, if yes, set it as current
             return {
               currentProjectId: Object.keys(updatedProjects)[0] || undefined,
               projects: updatedProjects,
+              currentProjectFiles: [],
             };
           });
         },

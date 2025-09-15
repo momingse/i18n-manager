@@ -2,6 +2,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { handleIPC, FileManagerIPCChannel } from ".";
 import ignore from "ignore";
+import { Stats } from "fs";
 
 export type ProjectFile = {
   name: string;
@@ -27,6 +28,7 @@ const readDirectoryRecursive = async (
   dirPath: string,
   rootPath: string,
   ig: ReturnType<typeof ignore> | null = null,
+  targetType: "file" | "directory" = "file",
 ): Promise<ProjectFile[]> => {
   const files: ProjectFile[] = [];
 
@@ -38,38 +40,49 @@ const readDirectoryRecursive = async (
       const relativePath = path.relative(rootPath, fullPath);
 
       // Skip ignored files
+      const isDirectoryFromDirent = entry.isDirectory();
       if (ig && ig.ignores(relativePath)) continue;
+      if (ig && isDirectoryFromDirent && ig.ignores(relativePath + "/"))
+        continue;
 
-      const isDirectory = entry.isDirectory();
-      let projectFile: ProjectFile;
+      let isDirectory = entry.isDirectory();
+      let stats: Stats | null = null;
 
       try {
-        const stats = await fs.stat(fullPath);
-        projectFile = {
-          name: entry.name,
-          path: fullPath,
-          isDirectory,
-          size: isDirectory ? undefined : stats.size,
-          modified: stats.mtime,
-        };
+        stats = await fs.stat(fullPath);
+        isDirectory = stats.isDirectory();
       } catch (statError) {
-        console.warn(`Could not get stats for ${fullPath}:`, statError);
-        projectFile = {
-          name: entry.name,
-          path: fullPath,
-          isDirectory,
-        };
+        console.error(`Could not get stats for ${fullPath}:`, statError);
       }
 
+      const projectFile: ProjectFile = {
+        name: entry.name,
+        path: fullPath,
+        isDirectory,
+        size: isDirectory ? undefined : stats?.size,
+        modified: stats?.mtime,
+      };
+
       if (isDirectory) {
+        if (targetType === "directory") {
+          files.push(projectFile);
+        }
+
         try {
-          const subFiles = await readDirectoryRecursive(fullPath, rootPath);
-          files.push(...subFiles);
-        } catch (subDirError) {
-          console.warn(`Could not read subdirectory ${fullPath}:`, subDirError);
+          const nestedFiles = await readDirectoryRecursive(
+            fullPath,
+            rootPath,
+            ig,
+            targetType,
+          );
+          files.push(...nestedFiles);
+        } catch (error) {
+          console.error(`Failed to read directory ${fullPath}:`, error);
         }
       } else {
-        files.push(projectFile);
+        if (targetType === "file") {
+          files.push(projectFile);
+        }
       }
     }
   } catch (error) {
@@ -93,15 +106,45 @@ export const setupFileManagerIPCHandler = () => {
           projectPath,
           projectPath,
           ig,
+          "file",
         );
 
         files.sort((a, b) => {
-          if (a.isDirectory && !b.isDirectory) return -1;
-          if (!a.isDirectory && b.isDirectory) return 1;
           return a.name.localeCompare(b.name);
         });
 
         return files;
+      } catch (error) {
+        console.error(
+          `Failed to read project files from ${projectPath}:`,
+          error,
+        );
+        return [];
+      }
+    },
+  );
+
+  handleIPC(
+    FileManagerIPCChannel.readProjectFolders,
+    async (event, projectPath) => {
+      try {
+        await fs.access(projectPath);
+
+        // Load .gitignore before reading
+        const ig = await loadGitIgnore(projectPath);
+
+        const folder = await readDirectoryRecursive(
+          projectPath,
+          projectPath,
+          ig,
+          "directory",
+        );
+
+        folder.sort((a, b) => {
+          return a.name.localeCompare(b.name);
+        });
+
+        return folder;
       } catch (error) {
         console.error(
           `Failed to read project files from ${projectPath}:`,

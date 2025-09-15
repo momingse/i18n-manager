@@ -55,6 +55,7 @@ export function StepCard({
 
       {step === 3 && (
         <I18nConfigStep
+          projectPath={projectData.projectPath}
           i18nPath={projectData.i18nPath}
           onI18nPathChange={(path) =>
             setProjectData((prev) => ({ ...prev, i18nPath: path }))
