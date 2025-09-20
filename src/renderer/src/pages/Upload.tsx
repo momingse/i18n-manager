@@ -151,6 +151,7 @@ export default function UploadPage() {
       );
 
       // TODO: handle conflict of translation result
+
       const mergedResult = translationResult.reduce(
         (acc, fileTranslationResult) => {
           Object.keys(fileTranslationResult).forEach((lang) => {

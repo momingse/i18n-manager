@@ -8,6 +8,7 @@ import {
 } from "zustand/middleware";
 import createDeepMerge from "@fastify/deepmerge";
 import path from "path-browserify";
+import { StoreSelector } from "@/types/store";
 
 export type i18nLanguage = {
   id: string;
@@ -59,19 +60,26 @@ type ProjectStoreActions = {
   unsetCurrentProject: () => void;
   removeCurrentProject: () => void;
   removeLanguage: (languageId: string) => void;
+
   removeTranslationByKey: (key: string) => void;
   updateTranslationKey: (oldKey: string, newKey: string) => void;
   addTranslationKey: (key: string) => void;
   updateTranslation: (language: string, key: string, value: string) => void;
+  updateDataByLanguage: (
+    language: string,
+    data: Record<string, string>,
+  ) => void;
+
   undoTranslation: () => void;
   redoTranslation: () => void;
   updateData: (data: Record<string, Record<string, string>>) => void;
   fetchProjectFiles: () => Promise<void>;
+  checkProjectDataConsistency: () => Promise<boolean>;
 };
 
 type ProjectStore = ProjectStoreState & ProjectStoreActions;
 
-type ProjectSelector<T> = (state: ProjectStore) => T;
+type ProjectSelector<U> = StoreSelector<ProjectStoreState, U>;
 
 const UNDO_LIMIT = 50;
 
@@ -249,9 +257,7 @@ export const useProjectStore = create<ProjectStore>()(
             const updatedData = deepClone(currentProject.data);
 
             for (const lang in updatedData) {
-              if (Object.prototype.hasOwnProperty.call(updatedData, lang)) {
-                delete updatedData[lang][key];
-              }
+              delete updatedData[lang][key];
             }
 
             const updatedCurrentProject: Project = {
@@ -391,6 +397,37 @@ export const useProjectStore = create<ProjectStore>()(
           });
         },
 
+        updateDataByLanguage: (language, data) => {
+          set((state) => {
+            const currentProject = state.projects[state.currentProjectId ?? ""];
+            if (!currentProject) return state;
+
+            const prevSnapshot = deepClone(currentProject.data);
+            const updatedData = deepClone(currentProject.data);
+
+            updatedData[language] = {
+              ...data,
+            };
+            const updatedCurrentProject: Project = {
+              ...currentProject,
+              data: updatedData,
+              undoableStack: {
+                undoStack: addToUndoStack(
+                  currentProject.undoableStack.undoStack,
+                  prevSnapshot,
+                ),
+                redoStack: [],
+              },
+            };
+            return {
+              projects: {
+                ...state.projects,
+                [updatedCurrentProject.id]: updatedCurrentProject,
+              },
+            };
+          });
+        },
+
         undoTranslation: () => {
           set((state) => {
             const currentProject = state.projects[state.currentProjectId ?? ""];
@@ -467,6 +504,10 @@ export const useProjectStore = create<ProjectStore>()(
             const updatedCurrentProject: Project = {
               ...currentProject,
               data: mergedData,
+              undoableStack: {
+                undoStack: [],
+                redoStack: [],
+              },
             };
             return {
               projects: {
@@ -493,6 +534,60 @@ export const useProjectStore = create<ProjectStore>()(
             set({ currentProjectFiles: [] });
           }
         },
+
+        checkProjectDataConsistency: async () => {
+          const currentProject = get().projects[get().currentProjectId ?? ""];
+          if (!currentProject) return false;
+
+          try {
+            const existingData: Record<
+              string,
+              Record<string, string>
+            > = await currentProject.fileLanguageMap.reduce(
+              async (accPromise, curr) => {
+                const acc = await accPromise;
+                const fullPath = path.join(
+                  currentProject.i18nPath,
+                  curr.filename,
+                );
+
+                try {
+                  const content =
+                    await window.electronAPI.fileManager.readFileContent(
+                      fullPath,
+                    );
+
+                  if (!content) {
+                    await window.electronAPI.fileManager.writeFileContent(
+                      fullPath,
+                      "{}",
+                    );
+                    return acc;
+                  }
+
+                  return {
+                    ...acc,
+                    [curr.language]: JSON.parse(content),
+                  };
+                } catch {
+                  console.error(`Failed to read ${fullPath}`);
+                }
+                return acc;
+              },
+              Promise.resolve({}),
+            );
+
+            const dataConsistency =
+              JSON.stringify(existingData) ===
+              JSON.stringify(currentProject.data);
+
+            return dataConsistency;
+          } catch (error) {
+            console.error("Failed to check project data consistency:", error);
+          }
+
+          return false;
+        },
       }),
       {
         name: "project-storage",
@@ -504,6 +599,7 @@ export const useProjectStore = create<ProjectStore>()(
         onRehydrateStorage: () => async (state) => {
           if (!state || !state.currentProjectId || !state.projects) return;
           await state.fetchProjectFiles();
+          await state.checkProjectDataConsistency();
         },
         merge: (persisted, current) => {
           const merged = deepMerge(current, persisted) as ProjectStore;

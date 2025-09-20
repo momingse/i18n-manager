@@ -26,6 +26,7 @@ interface LLMField {
   required?: boolean;
 }
 
+// TODO: add support for other LLM providers
 const LLM_PROVIDERS: Record<LLMProvider, { name: string; fields: LLMField[] }> =
   {
     gemini: {
@@ -40,39 +41,51 @@ const LLM_PROVIDERS: Record<LLMProvider, { name: string; fields: LLMField[] }> =
         },
       ],
     },
-    openai: {
-      name: "ChatGPT (OpenAI)",
+    // openai: {
+    //   name: "ChatGPT (OpenAI)",
+    //   fields: [
+    //     { key: "apiKey", label: "API Key", type: "password", required: true },
+    //     {
+    //       key: "model",
+    //       label: "Model",
+    //       type: "text",
+    //       placeholder: "gpt-5",
+    //     },
+    //   ],
+    // },
+    // claude: {
+    //   name: "Claude (Anthropic)",
+    //   fields: [
+    //     { key: "apiKey", label: "API Key", type: "password", required: true },
+    //     {
+    //       key: "model",
+    //       label: "Model",
+    //       type: "text",
+    //       placeholder: "claude-opus-4-20250514",
+    //     },
+    //   ],
+    // },
+    // xai: {
+    //   name: "xAI Grok",
+    //   fields: [
+    //     { key: "apiKey", label: "API Key", type: "password", required: true },
+    //     {
+    //       key: "model",
+    //       label: "Model",
+    //       type: "text",
+    //       placeholder: "grok-3-latest",
+    //     },
+    //   ],
+    // },
+    ollama: {
+      name: "Ollama",
       fields: [
-        { key: "apiKey", label: "API Key", type: "password", required: true },
+        { key: "model", label: "Model", type: "text", required: true },
         {
-          key: "model",
-          label: "Model",
+          key: "baseUrl",
+          label: "Base URL",
           type: "text",
-          placeholder: "gpt-5",
-        },
-      ],
-    },
-    claude: {
-      name: "Claude (Anthropic)",
-      fields: [
-        { key: "apiKey", label: "API Key", type: "password", required: true },
-        {
-          key: "model",
-          label: "Model",
-          type: "text",
-          placeholder: "claude-opus-4-20250514",
-        },
-      ],
-    },
-    xai: {
-      name: "xAI Grok",
-      fields: [
-        { key: "apiKey", label: "API Key", type: "password", required: true },
-        {
-          key: "model",
-          label: "Model",
-          type: "text",
-          placeholder: "grok-3-latest",
+          placeholder: "http://localhost:11434",
         },
       ],
     },

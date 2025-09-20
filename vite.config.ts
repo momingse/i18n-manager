@@ -34,4 +34,9 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src/renderer/src"),
     },
   },
+  server: {
+    watch: {
+      ignored: ["**/locale/**"],
+    },
+  },
 });

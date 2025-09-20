@@ -9,7 +9,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useProjectStore } from "@/store/project";
 import { ChevronDown, FileText, FolderOpen, Globe, Plus } from "lucide-react";
-import { useState } from "react";
 
 interface ProjectSelectorProps {
   isOpen: boolean;
