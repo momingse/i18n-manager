@@ -49,6 +49,7 @@ interface TranslationEntry {
   highlightEnd?: number;
 }
 
+// TODO: fix resolve bug
 export default function TranslationResultsPage() {
   const [selectedLanguage, setSelectedLanguage] = useState("");
   const [editingKey, setEditingKey] = useState<string | null>(null);

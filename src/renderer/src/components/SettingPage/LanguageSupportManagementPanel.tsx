@@ -15,6 +15,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useShallow } from "zustand/shallow";
 
+// TODO: implement a better create language flow
 const LanguageSupportManagementPanel = () => {
   const [expand, setExpand] = useState(true);
   const [showLanguageDialog, setShowLanguageDialog] = useState(false);

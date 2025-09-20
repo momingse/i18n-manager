@@ -76,6 +76,18 @@ const LLM_PROVIDERS: Record<LLMProvider, { name: string; fields: LLMField[] }> =
         },
       ],
     },
+    ollama: {
+      name: "Ollama",
+      fields: [
+        { key: "model", label: "Model", type: "text", required: true },
+        {
+          key: "baseUrl",
+          label: "Base URL",
+          type: "text",
+          placeholder: "http://localhost:11434",
+        },
+      ],
+    },
   };
 
 export const LLMConfigurePanel: React.FC = () => {

@@ -1,6 +1,6 @@
 {
   "noFilesSelected": "No files selected",
-  "analysisComplete": "Analysis complete",
+  "analysisComplete": "Analysis complete...",
   "analysisCompleteDescription": "Found translatable content in {{count}} files",
   "analysisFailed": "Analysis failed",
   "analysisFailedDescription": "Please try again",

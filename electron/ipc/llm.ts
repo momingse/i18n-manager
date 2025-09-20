@@ -3,6 +3,7 @@ import { handleIPC, LLMIPCChannel } from ".";
 import { llmCaller } from "../helper/llm";
 import { storeGetItem, storeRemoveItem, storeSetItem } from "../helper/storage";
 import z from "zod";
+import { LLMProvider } from "../types/llm";
 
 export const setupLLMIPCHandler = () => {
   handleIPC(LLMIPCChannel.storeApiKey, async (_evt, apiKey, provider) => {
@@ -50,14 +51,32 @@ export const setupLLMIPCHandler = () => {
         throw new Error("Invalid prompt");
       }
 
-      const encryptedApiKey = await storeGetItem(provider);
-      if (!encryptedApiKey) throw new Error("No API key configured");
+      let apiKey = "";
 
-      const encryptedBuffer = Buffer.from(encryptedApiKey, "base64");
-      const apiKey = encryptedApiKey
-        ? safeStorage.decryptString(encryptedBuffer)
-        : null;
-      if (!apiKey) throw new Error("Invalid API key");
+      switch (provider) {
+        case LLMProvider.gemini: {
+          try {
+            const encryptedApiKey = await storeGetItem(provider);
+            if (encryptedApiKey) {
+              const encryptedBuffer = Buffer.from(encryptedApiKey, "base64");
+              apiKey = safeStorage.decryptString(encryptedBuffer) || "";
+            }
+          } catch (err) {
+            console.warn("Failed to retrieve/decrypt Gemini API key:", err);
+            apiKey = "";
+          }
+          break;
+        }
+
+        case LLMProvider.openai:
+        case LLMProvider.claude:
+        case LLMProvider.xai:
+        default: {
+          // Explicitly set empty for non-Google providers
+          apiKey = "";
+          break;
+        }
+      }
 
       const schema = z.record(
         z.string().describe("language"),
@@ -67,7 +86,6 @@ export const setupLLMIPCHandler = () => {
         ),
       );
 
-      // Make the provider call:
       const result = await llmCaller(
         apiKey,
         prompt,

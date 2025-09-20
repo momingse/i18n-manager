@@ -36,6 +36,7 @@ export const SettingsPage: React.FC = () => {
 
   const handleDeleteProject = () => {
     removeCurrentProject();
+    setShowDeleteDialog(false);
   };
 
   return (

@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { useMac } from "@/hooks/useDevice";
 import { cn } from "@/lib/utils";
 import {
   canRedoSelector,
@@ -34,20 +35,21 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Download,
   Edit3,
   Filter,
   Menu,
   Plus,
   Redo,
+  Save,
   Search,
   Trash2,
   Undo,
 } from "lucide-react";
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useShallow } from "zustand/shallow";
-import { useMac } from "@/hooks/useDevice";
+import { useConfirmStore } from "@/store/confirmStore";
+import path from "path-browserify";
 
 export interface Translation {
   key: string;
@@ -69,6 +71,8 @@ export default function EditorPage() {
 
   const isMac = useMac();
 
+  const { addConfirmation } = useConfirmStore();
+
   const {
     removeTranslationByKey,
     updateTranslationKey,
@@ -76,6 +80,8 @@ export default function EditorPage() {
     addTranslationKey,
     undoTranslation,
     redoTranslation,
+    updateDataByLanguage,
+    checkProjectDataConsistency,
   } = useProjectStore();
 
   const languages = useProjectStore(useShallow(currentProjectLanguageSelector));
@@ -172,9 +178,104 @@ export default function EditorPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [editingCell, handleRedo, handleUndo, isMac]);
 
-  const saveTranslations = async () => {
-    // TODO: save translations
-    toast("Saved", { description: "Changes saved successfully" });
+  const syncTranslation = async () => {
+    const isConsistent = await checkProjectDataConsistency();
+    if (isConsistent) {
+      toast.success("Already in sync", {
+        description: "Translation data is consistent with files",
+      });
+      return;
+    }
+
+    addConfirmation({
+      title: "Sync translations",
+      description:
+        "Detected translation data is out of sync. Do you want to sync it?",
+      actions: [
+        {
+          key: "overwrite",
+          text: "Overwrite files",
+          variant: "destructive",
+          callbackFn: async () => {
+            try {
+              if (!currentProject) return;
+
+              // Write current project data to all files
+              for (const langMap of currentProject.fileLanguageMap) {
+                const filePath = path.join(
+                  currentProject.i18nPath,
+                  langMap.filename,
+                );
+                const data = currentProject.data[langMap.language] || {};
+                const jsonContent = JSON.stringify(data, null, 2);
+
+                await window.electronAPI.fileManager.writeFileContent(
+                  filePath,
+                  jsonContent,
+                );
+              }
+
+              toast.success("Files overwritten", {
+                description:
+                  "All translation files have been updated with current data",
+              });
+            } catch (error) {
+              console.error("Failed to overwrite files:", error);
+              toast.error("Failed to overwrite files", {
+                description: "An error occurred while writing to files",
+              });
+            }
+          },
+        },
+        {
+          key: "restore",
+          text: "Restore from files",
+          variant: "outline",
+          callbackFn: async () => {
+            try {
+              if (!currentProject) return;
+
+              for (const langMap of currentProject.fileLanguageMap) {
+                const filePath = path.join(
+                  currentProject.i18nPath,
+                  langMap.filename,
+                );
+
+                try {
+                  const content =
+                    await window.electronAPI.fileManager.readFileContent(
+                      filePath,
+                    );
+
+                  const fileContent = content ? JSON.parse(content) : {};
+                  updateDataByLanguage(langMap.language, fileContent);
+                } catch (parseError) {
+                  console.warn(
+                    `Failed to parse ${filePath}, using empty object`,
+                  );
+                  updateDataByLanguage(langMap.language, {});
+                }
+              }
+
+              toast.success("Data restored", {
+                description:
+                  "Project data has been restored from translation files",
+              });
+            } catch (error) {
+              console.error("Failed to restore from files:", error);
+              toast.error("Failed to restore data", {
+                description: "An error occurred while reading from files",
+              });
+            }
+          },
+        },
+        {
+          key: "skip",
+          text: "Skip",
+          variant: "outline",
+        },
+      ],
+    });
   };
 
   const addNewTranslationKey = () => {
@@ -365,11 +466,11 @@ export default function EditorPage() {
               </div>
 
               <Button
-                onClick={saveTranslations}
+                onClick={syncTranslation}
                 className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
               >
-                <Download className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Export</span>
+                <Save className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Sync</span>
               </Button>
             </div>
           </div>

@@ -1,4 +1,5 @@
-import { Navigation } from "@/components/navigation";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { Navigation } from "@/components/Navigation";
 import InitPage from "@/pages/Init";
 import { routes } from "@/routes";
 import { useProjectStore } from "@/store/project";
@@ -33,6 +34,7 @@ const App = () => {
         </main>
       </HashRouter>
       <Toaster />
+      <ConfirmDialog />
     </div>
   );
 };

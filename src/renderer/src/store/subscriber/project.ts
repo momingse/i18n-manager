@@ -1,25 +1,39 @@
-import { useEffect } from "react";
-import { Project, useProjectStore } from "../project";
 import path from "path-browserify";
+import { useEffect } from "react";
 import { toast } from "sonner";
-import { debounce } from "@/lib/debounce";
+import { useConfirmStore } from "../confirmStore";
+import { Project, useProjectStore } from "../project";
 
 type ProjectStoreSubscribeState = {
+  currentProjectId: string | undefined;
   fileLanguageMap: Project["fileLanguageMap"];
   data: Project["data"];
   translationPath: Project["i18nPath"];
   projectPath: Project["path"];
 };
 
+type FileComparision = {
+  conflicts: boolean;
+  fullPath: string;
+  diskContent: string | null;
+};
+
 export const useProjectSubscriber = () => {
+  const { addConfirmation } = useConfirmStore();
+  const { updateDataByLanguage } = useProjectStore();
+
   useEffect(() => {
     const handler = async (
       state: ProjectStoreSubscribeState,
       prevState: ProjectStoreSubscribeState,
     ) => {
-      if (!state.projectPath) return;
+      if (
+        !state.projectPath ||
+        state.currentProjectId !== prevState.currentProjectId
+      )
+        return;
 
-      await Promise.all(
+      const fileComparision: FileComparision[] = await Promise.all(
         state.fileLanguageMap.map(async (lang) => {
           const fullPath = path.join(state.translationPath, lang.filename);
           let fileContent: string | null = null;
@@ -28,43 +42,107 @@ export const useProjectSubscriber = () => {
             fileContent =
               await window.electronAPI.fileManager.readFileContent(fullPath);
           } catch (readError) {
-            // If file doesn't exist, treat backup as null (behavior kept from original)
             console.warn(`Failed to read backup for ${fullPath}:`, readError);
             toast.error(`Failed to read ${fullPath}`, {
               description:
                 "File may not exist or could not be read. Please check the file and try again.",
             });
-            return;
+            return {
+              conflicts: true,
+              fullPath,
+              diskContent: null,
+            };
           }
 
-          // Prepare previous store snapshot content (stringified)
-          const prevLangData =
-            prevState && prevState.data && prevState.data[lang.language]
-              ? prevState.data[lang.language]
-              : null;
+          const prevLangData = prevState?.data?.[lang.language] ?? null;
           const prevContent = prevLangData
             ? JSON.stringify(prevLangData, null, 2)
             : null;
 
-          // If the on-disk backup differs from the previous store snapshot -> conflict.
-          // Note: we compare strings. diskBackup may have different whitespace; trim both sides.
-          const diskTrimmed = fileContent ? fileContent.trim() : null;
-          const prevTrimmed = prevContent ? prevContent.trim() : null;
+          const diskTrimmed = fileContent?.trim() ?? null;
+          const prevTrimmed = prevContent?.trim() ?? null;
 
-          if (diskTrimmed !== prevTrimmed) {
-            // TODO: notify user of conflict
-            console.error(`Conflict detected for ${fullPath}:`);
-            return;
-          }
+          return {
+            conflicts: diskTrimmed !== prevTrimmed,
+            fullPath,
+            diskContent: diskTrimmed,
+          };
+        }),
+      );
 
-          // Prepare new content we'll want to write
-          const newLangData =
-            state && state.data && state.data[lang.language]
-              ? state.data[lang.language]
-              : {};
+      if (fileComparision.some((c) => c.conflicts)) {
+        const conflictLangs = state.fileLanguageMap.filter(
+          (_, i) => fileComparision[i].conflicts,
+        );
+
+        addConfirmation({
+          title: "File conflict",
+          description: `The file(s) ${conflictLangs
+            .map((lang) => lang.filename)
+            .join(", ")} have changed. Do you want to overwrite them?`,
+          actions: [
+            {
+              key: "overwrite",
+              text: "Overwrite file",
+              variant: "destructive",
+              callbackFn: async () => {
+                try {
+                  for (const { fullPath } of fileComparision) {
+                    const lang = conflictLangs.find(
+                      (l) =>
+                        path.join(state.translationPath, l.filename) ===
+                        fullPath,
+                    );
+                    if (!lang) {
+                      toast.error("Failed to overwrite file");
+                      continue;
+                    }
+
+                    const newLangData = state.data?.[lang.language] ?? {};
+                    const newContent = JSON.stringify(newLangData, null, 2);
+
+                    await window.electronAPI.fileManager.writeFileContent(
+                      fullPath,
+                      newContent,
+                    );
+                  }
+                } catch (error) {
+                  console.error("Failed to overwrite file:", error);
+                }
+              },
+            },
+            {
+              key: "restore",
+              text: "Restore state",
+              variant: "outline",
+              callbackFn: () => {
+                for (const { diskContent, fullPath } of fileComparision) {
+                  const lang = conflictLangs.find(
+                    (l) =>
+                      path.join(state.translationPath, l.filename) === fullPath,
+                  );
+                  updateDataByLanguage(
+                    lang?.language ?? "",
+                    diskContent ? JSON.parse(diskContent) : {},
+                  );
+                }
+              },
+            },
+            {
+              key: "skip",
+              text: "Skip",
+              variant: "outline",
+            },
+          ],
+        });
+        return;
+      }
+
+      await Promise.all(
+        state.fileLanguageMap.map(async (lang) => {
+          const fullPath = path.join(state.translationPath, lang.filename);
+          const newLangData = state.data?.[lang.language] ?? {};
           const newContent = JSON.stringify(newLangData, null, 2);
-
-          // If no conflict (or solver allowed overwrite) then write new data
           try {
             await window.electronAPI.fileManager.writeFileContent(
               fullPath,
@@ -72,34 +150,14 @@ export const useProjectSubscriber = () => {
             );
           } catch (writeError) {
             console.error(`Failed to write ${fullPath}:`, writeError);
-            if (fileContent !== null) {
-              try {
-                // Restore backup on failure
-                await window.electronAPI.fileManager.writeFileContent(
-                  fullPath,
-                  fileContent,
-                );
-                console.log(`Restored backup for ${fullPath}`);
-                toast.error(`Failed to write ${fullPath}, restored backup`);
-              } catch (restoreError) {
-                console.error(
-                  `Failed to restore backup for ${fullPath}:`,
-                  restoreError,
-                );
-                toast.error(
-                  `Failed to write ${fullPath}, failed to restore backup`,
-                );
-              }
-            }
           }
         }),
       );
     };
 
-    const debouncedHandler = debounce(handler);
-
     const unsub = useProjectStore.subscribe<ProjectStoreSubscribeState>(
       (state) => ({
+        currentProjectId: state.currentProjectId,
         fileLanguageMap: state.currentProjectId
           ? state.projects[state.currentProjectId].fileLanguageMap
           : [],
@@ -113,10 +171,7 @@ export const useProjectSubscriber = () => {
           ? state.projects[state.currentProjectId].i18nPath
           : "",
       }),
-      // Zustand provides both current selected slice and previous selected slice as args
-      (state, prevState) => {
-        debouncedHandler(state, prevState);
-      },
+      handler,
       {
         equalityFn: (a, b) => JSON.stringify(a) === JSON.stringify(b),
       },
@@ -125,5 +180,5 @@ export const useProjectSubscriber = () => {
     return () => {
       unsub();
     };
-  }, []);
+  }, [addConfirmation, updateDataByLanguage]);
 };
