@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
+import { routes } from "@/routes";
 import { useSidebarStore } from "@/store/sidebar";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Button } from "./ui/button";
-import { routes } from "@/routes";
 import { ProjectSelector } from "./ProjectSelector";
+import { Button } from "./ui/button";
 
 export function Navigation() {
   const { toggle, isOpen } = useSidebarStore();
