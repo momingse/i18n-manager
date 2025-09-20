@@ -8,8 +8,8 @@
     "build": "tsc && vite build && electron-builder",
     "eslint": "eslint . --ext ts,tsx --report-unused-disable-directives",
     "preview": "vite preview",
-    "type-check": "pnpm --package=typescript dlx tsc --noEmit",
-    "lint": "pnpm run eslint && pnpm run type-check"
+    "type-check": "tsc --noEmit",
+    "lint": "npm run eslint && npm run type-check"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.8",
