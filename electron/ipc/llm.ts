@@ -68,9 +68,9 @@ export const setupLLMIPCHandler = () => {
           break;
         }
 
-        case LLMProvider.openai:
-        case LLMProvider.claude:
-        case LLMProvider.xai:
+        // case LLMProvider.openai:
+        // case LLMProvider.claude:
+        // case LLMProvider.xai:
         default: {
           // Explicitly set empty for non-Google providers
           apiKey = "";

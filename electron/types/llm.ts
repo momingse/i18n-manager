@@ -1,8 +1,8 @@
 export enum LLMProvider {
   gemini = "gemini",
-  openai = "openai",
-  claude = "claude",
-  xai = "xai",
+  // openai = "openai",
+  // claude = "claude",
+  // xai = "xai",
   ollama = "ollama",
 }
 
